@@ -1,0 +1,3 @@
+[submodule "CRIS.pytorch"]
+	path = CRIS.pytorch
+	url = git@github.com:DerrickWang005/CRIS.pytorch.git
