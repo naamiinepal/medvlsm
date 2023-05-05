@@ -1,3 +1,6 @@
 [submodule "CRIS.pytorch"]
 	path = CRIS.pytorch
 	url = git@github.com:Kanchan112/CRIS.pytorch.git
+[submodule "VL-Seg"]
+	path = VL-Seg
+	url = git@github.com:naamiinepal/VL-Seg.git
