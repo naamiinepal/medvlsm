@@ -23,19 +23,20 @@ Usage:
 """
 
 
-from monai.metrics import (
-    compute_surface_dice,
-    compute_hausdorff_distance,
-    compute_iou,
-    compute_dice,
-)
 import os
+from argparse import ArgumentParser
+
 import cv2
 import numpy as np
-import torch
 import pandas as pd
+import torch
+from monai.metrics import (
+    compute_dice,
+    compute_hausdorff_distance,
+    compute_iou,
+    compute_surface_dice,
+)
 from tqdm import tqdm
-from argparse import ArgumentParser
 
 
 def compute_metrics(gt_img_path, pred_img_path):
@@ -43,7 +44,9 @@ def compute_metrics(gt_img_path, pred_img_path):
     pred_img = cv2.imread(pred_img_path, cv2.IMREAD_GRAYSCALE)
 
     # make sure the images are of same size
-    assert gt_img.shape == pred_img.shape, "Images are of different sizes"
+    assert (
+        gt_img.shape == pred_img.shape
+    ), f"Images {gt_img_path} and {pred_img_path} are of different sizes"
 
     # threshold the images
     gt_img[gt_img > 0] = 1
