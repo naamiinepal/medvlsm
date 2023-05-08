@@ -23,27 +23,30 @@ Usage:
 """
 
 
-from monai.metrics import (
-    compute_surface_dice,
-    compute_hausdorff_distance,
-    compute_iou,
-    compute_dice,
-)
 import os
+from argparse import ArgumentParser, Namespace
+
 import cv2
 import numpy as np
-import torch
 import pandas as pd
+import torch
+from monai.metrics import (
+    compute_dice,
+    compute_hausdorff_distance,
+    compute_iou,
+    compute_surface_dice,
+)
 from tqdm import tqdm
-from argparse import ArgumentParser
 
 
-def compute_metrics(gt_img_path, pred_img_path):
+def compute_metrics(gt_img_path: str, pred_img_path: str):
     gt_img = cv2.imread(gt_img_path, cv2.IMREAD_GRAYSCALE)
     pred_img = cv2.imread(pred_img_path, cv2.IMREAD_GRAYSCALE)
 
     # make sure the images are of same size
-    assert gt_img.shape == pred_img.shape, "Images are of different sizes"
+    assert (
+        gt_img.shape == pred_img.shape
+    ), f"Images {gt_img_path} and {pred_img_path} are of different sizes"
 
     # threshold the images
     gt_img[gt_img > 0] = 1
@@ -62,34 +65,36 @@ def compute_metrics(gt_img_path, pred_img_path):
     return surface_dice.item(), hausdorff_distance.item(), iou.item(), dice.item()
 
 
-def main(args):
+def main(args: Namespace):
     surface_dice_list = []
     hausdorff_distance_list = []
     iou_list = []
     dice_list = []
 
-    filenames = [x for x in os.listdir(args.seg_path) if x.endswith(".png")]
-    pbar = tqdm(filenames, desc="Evaluating metrics")
+    np.set_printoptions(precision=4)
 
-    for filename in pbar:
-        gt_img_path = os.path.join(args.gt_path, filename)
-        pred_img_path = os.path.join(args.seg_path, filename)
+    filenames = tuple(x for x in os.listdir(args.seg_path) if x.endswith(".png"))
+    with tqdm(filenames, desc="Evaluating metrics") as pbar:
+        for filename in pbar:
+            gt_img_path = os.path.join(args.gt_path, filename)
+            pred_img_path = os.path.join(args.seg_path, filename)
 
-        surface_dice, hausdorff_distance, iou, dice = compute_metrics(
-            gt_img_path, pred_img_path
-        )
+            surface_dice, hausdorff_distance, iou, dice = compute_metrics(
+                gt_img_path, pred_img_path
+            )
 
-        surface_dice_list.append(surface_dice)
-        hausdorff_distance_list.append(hausdorff_distance)
-        iou_list.append(iou)
-        dice_list.append(dice)
-        pbar.set_postfix(
-            {
-                "file": filename,
-                "Mean Dice": np.mean(dice_list).round(4),
-                "Mean IoU": np.mean(iou_list).round(4),
-            }
-        )
+            surface_dice_list.append(surface_dice)
+            hausdorff_distance_list.append(hausdorff_distance)
+            iou_list.append(iou)
+            dice_list.append(dice)
+
+            pbar.set_postfix(
+                {
+                    "file": filename,
+                    "Mean Dice": np.mean(dice_list),
+                    "Mean IoU": np.mean(iou_list),
+                }
+            )
 
     df = pd.DataFrame(
         {
@@ -101,16 +106,18 @@ def main(args):
         }
     )
 
-    print("Mean surface dice: ", np.mean(surface_dice_list).round(4))
-    print("Mean hausdorff distance: ", np.mean(hausdorff_distance_list).round(4))
-    print("Mean iou: ", np.mean(iou_list).round(4))
-    print("Mean dice: ", np.mean(dice_list).round(4))
-    df.to_csv("metrics.csv", index=False, float_format="%.4f")
+    print("Mean surface dice: ", np.mean(surface_dice_list))
+    print("Mean hausdorff distance: ", np.mean(hausdorff_distance_list))
+    print("Mean iou: ", np.mean(iou_list))
+    print("Mean dice: ", np.mean(dice_list))
+
+    df.to_csv(args.csv_path, index=False, float_format="%.4f")
     print(f"Saved metrics to {args.csv_path}")
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
+
     parser.add_argument(
         "--seg_path",
         type=str,
@@ -126,5 +133,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--csv_path", type=str, default="metrics.csv", help="path to save csv file"
     )
+
     args = parser.parse_args()
     main(args)
