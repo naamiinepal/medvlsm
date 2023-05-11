@@ -1,11 +1,14 @@
+import argparse
 import json
 import os
 import random
 
-from features_from_img import get_mask_decription, mask_to_overall_bbox
+from features_from_img import mask_to_overall_bbox
 
 
-def get_json_data(root_dir, mask_dir_name, img_dir_name, op_dir, val_per, test_per):
+def get_json_data(
+    root_dir, img_dir_name, mask_dir_name, op_dir, val_per, test_per, default_prompt
+):
     """Genrates Annotations of segmentation datset in the format requitred from training pytorch.CRIS
     Assumes that we have a root_dir, inside which there are images and masks directories and the images are named sequentially from 0 inside these dirctories,
     Also, this is for the assumption that each image has a single annotation decribing all the objets.
@@ -22,11 +25,11 @@ def get_json_data(root_dir, mask_dir_name, img_dir_name, op_dir, val_per, test_p
     """
     random.seed(444)
     total_data = os.listdir(os.path.join(root_dir, mask_dir_name))
-    print(val_per)
+    # total_data = [x for x in total_data if int(x[:-4]) >= 900]
 
-    val_data = random.sample(total_data, int(val_per * len(total_data)))
+    val_data = random.sample(total_data, int(float(val_per) * len(total_data)))
     rem_data = [x for x in total_data if x not in val_data]
-    test_data = random.sample(rem_data, int(test_per * len(total_data)))
+    test_data = random.sample(rem_data, int(float(test_per) * len(total_data)))
     train_data = [x for x in rem_data if x not in test_data]
 
     train_json = []
@@ -38,8 +41,9 @@ def get_json_data(root_dir, mask_dir_name, img_dir_name, op_dir, val_per, test_p
     for i, mask in enumerate(total_data):
         mask_path = os.path.join(root_dir, mask_dir_name, mask)
         bbox = mask_to_overall_bbox(mask_path)
-        stat, prompt = get_mask_decription(mask_path)
+        prompt = default_prompt
         seg_id = int(mask_path.split("/")[-1].split(".")[0])
+
         img_name = mask.split(".")[0] + "." + img_ext
         sent = [{"idx": 0, "sent_id": i, "sent": prompt}]
         op = {
@@ -60,21 +64,42 @@ def get_json_data(root_dir, mask_dir_name, img_dir_name, op_dir, val_per, test_p
             test_json.append(op)
 
     print(len(train_json), len(val_json), len(test_json))
-    # with open(os.path.join(op_dir, "anns/isic/train.json"), "w") as of:
-    #     of.write(json.dumps(train_json))
-    # with open(os.path.join(op_dir, "anns/isic/val.json"), "w") as of:
-    #     of.write(json.dumps(val_json))
-    with open(os.path.join(op_dir, "anns/isic/testA.json"), "w") as of:
+
+    os.makedirs(op_dir, exist_ok=True)
+
+    with open(os.path.join(op_dir, "train.json"), "w") as of:
+        of.write(json.dumps(train_json))
+    with open(os.path.join(op_dir, "val.json"), "w") as of:
+        of.write(json.dumps(val_json))
+    with open(os.path.join(op_dir, "testA.json"), "w") as of:
         of.write(json.dumps(test_json))
-    with open(os.path.join(op_dir, "anns/isic/testB.json"), "w") as of:
+    with open(os.path.join(op_dir, "testB.json"), "w") as of:
         of.write(json.dumps(test_json))
 
 
-get_json_data(
-    "/mnt/Enterprise/PUBLIC_DATASETS/skin_datasets/isic/test",
-    "masks_cf",
-    "images_cf",
-    "/mnt/Enterprise/miccai_2023_CRIS/CRIS.pytorch/datasets",
-    0.0,
-    1.0,
-)
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--root_data_dir", type=str, required=True)
+    parser.add_argument("--image_dir", type=str, required=True)
+    parser.add_argument("--mask_dir", type=str, required=True)
+    parser.add_argument("--output_data_dir", type=str, required=True)
+    parser.add_argument("--valid_per", type=str, required=True)
+    parser.add_argument("--test_per", type=str, required=True)
+    # parser.add_argument("--cls_name", type=str, required=True)
+    parser.add_argument("--default_prompt", type=str, required=False)
+    args = parser.parse_args()
+
+    print(args)
+    get_json_data(
+        args.root_data_dir,
+        args.image_dir,
+        args.mask_dir,
+        args.output_data_dir,
+        args.valid_per,
+        args.test_per,
+        # args.cls_name,
+        args.default_prompt,
+    )
+
+    print("Annotations Created")
