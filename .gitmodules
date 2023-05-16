@@ -4,3 +4,6 @@
 [submodule "VL-Seg"]
 	path = VL-Seg
 	url = git@github.com:naamiinepal/VL-Seg.git
+[submodule "OFA"]
+	path = OFA
+	url = git@github.com:Kanchan112/OFA.git
