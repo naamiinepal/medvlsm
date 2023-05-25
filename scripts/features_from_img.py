@@ -1,21 +1,13 @@
-import argparse
-import glob
-
 import cv2
 import numpy as np
-from num2words import num2words
-from PIL import Image
 from scipy import ndimage
-from skimage.io import imread, imshow
 from skimage.measure import find_contours, label, regionprops
 
 """ Convert a mask to border image """
 
 
 def mask_to_border(mask):
-
-    h, w = mask.shape
-    border = np.zeros((h, w))
+    border = np.zeros_like(mask)
 
     contours = find_contours(mask, 128)
     for contour in contours:
@@ -146,7 +138,7 @@ def get_mask_decription(mask_ori):
     """
     # mask_ori = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
 
-    mask = np.array((mask_ori / 255.0) > 0.5, dtype=int)
+    mask = np.array(mask_ori > 127.5, dtype=int)
 
     # get masks labelled with different values
     label_im, nb_labels = ndimage.label(mask)
@@ -156,12 +148,8 @@ def get_mask_decription(mask_ori):
     sizes = []
     positions = []
 
-    multiple = False
     num = nb_labels
     for i in range(nb_labels):
-
-        if i > 0:
-            multiple = True
         mask_compare = np.full(np.shape(label_im), i + 1)
         # check equality test and have the value 1 on the location of each mask
         separate_mask = np.equal(label_im, mask_compare).astype(int) * mask_ori
@@ -184,9 +172,7 @@ def get_mask_decription(mask_ori):
         posnonzero = {k: v for k, v in pos.items() if v != 0}
         pos_str = ""
 
-        if len(posnonzero) == 0:
-            pass
-        elif len(posnonzero) == 1:
+        if len(posnonzero) == 1:
             pos_str = list(posnonzero.keys())[0]
         elif len(posnonzero) > 1:
             pos_signigicant = {k: v for k, v in pos.items() if v >= 0.1}
@@ -205,7 +191,7 @@ def get_mask_decription(mask_ori):
 
                 (c_x, c_y) = ((bbox[1] + bbox[3]) / 2, (bbox[0] + bbox[2]) / 2)
 
-                h, w = mask.shape
+                h = mask.shape[0]
                 if c_x < h / 3:
                     p_x = "top"
                 elif c_x >= h / 3 and c_x <= 2 * h / 3:
@@ -248,6 +234,7 @@ def get_mask_decription(mask_ori):
 
 
 if __name__ == "__main__":
+    import argparse
 
     parser = argparse.ArgumentParser()
 
