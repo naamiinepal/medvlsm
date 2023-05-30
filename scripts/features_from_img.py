@@ -123,15 +123,15 @@ def patch_coverage(mask):
     return {
         "coverage": coverage,
         "per_grid": {
-            "top_left": one_per,
+            "top left": one_per,
             "top": two_per,
-            "top_right": three_per,
+            "top right": three_per,
             "left": four_per,
             "center": five_per,
             "right": six_per,
-            "bottom_left": seven_per,
+            "bottom left": seven_per,
             "bottom": eight_per,
-            "bottom_right": nine_per,
+            "bottom right": nine_per,
         },
     }
 
