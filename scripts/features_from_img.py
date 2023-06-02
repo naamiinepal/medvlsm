@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from scipy import ndimage
 from skimage.measure import find_contours, label, regionprops
+from num2words import num2words
 
 """ Convert a mask to border image """
 
@@ -128,7 +129,7 @@ def patch_coverage(mask):
     }
 
 
-def get_mask_decription(mask_ori):
+def get_mask_description(mask_path):
     """_summary_
     function to get auxiliary information of image
     Args:
@@ -136,7 +137,7 @@ def get_mask_decription(mask_ori):
     Returns:
         _type_: _description_
     """
-    # mask_ori = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+    mask_ori = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
 
     mask = np.array(mask_ori > 127.5, dtype=int)
 
@@ -230,15 +231,14 @@ def get_mask_decription(mask_ori):
     if large_obj > 0:
         sizes.append("large")
 
-    return ", ".join(sizes), ", ".join(positions), num
+    return ", ".join(sizes), ", ".join(positions), num2words(num)
 
 
 if __name__ == "__main__":
     import argparse
-
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--mask_path", type=str, required=True)
     args = parser.parse_args()
 
-    print(get_mask_decription(args.mask_path))
+    print(c(args.mask_path))
