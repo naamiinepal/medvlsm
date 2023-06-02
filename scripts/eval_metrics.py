@@ -141,9 +141,16 @@ def main(args: Namespace):
     )
 
     print("Mean surface dice: ", np.mean(surface_dice_list))
+    print("Std surface dice: ", np.std(surface_dice_list))
+
     print("Mean hausdorff distance: ", np.mean(hausdorff_distance_list))
+    print("Std hausdorff distance: ", np.std(hausdorff_distance_list))
+
     print("Mean iou: ", np.mean(iou_list))
+    print("Std iou: ", np.std(iou_list))
+
     print("Mean dice: ", np.mean(dice_list))
+    print("Std dice: ", np.std(dice_list))
 
     df.to_csv(args.csv_path, index=False, float_format="%.4f")
     print(f"Saved metrics to {args.csv_path}")
