@@ -1,5 +1,3 @@
-import argparse
-
 import cv2
 import numpy as np
 from scipy import ndimage
@@ -10,8 +8,7 @@ from num2words import num2words
 
 
 def mask_to_border(mask):
-    h, w = mask.shape
-    border = np.zeros((h, w))
+    border = np.zeros_like(mask)
 
     contours = find_contours(mask, 128)
     for contour in contours:
@@ -119,15 +116,15 @@ def patch_coverage(mask):
     return {
         "coverage": coverage,
         "per_grid": {
-            "top_left": one_per,
+            "top left": one_per,
             "top": two_per,
-            "top_right": three_per,
+            "top right": three_per,
             "left": four_per,
             "center": five_per,
             "right": six_per,
-            "bottom_left": seven_per,
+            "bottom left": seven_per,
             "bottom": eight_per,
-            "bottom_right": nine_per,
+            "bottom right": nine_per,
         },
     }
 
@@ -142,7 +139,7 @@ def get_mask_description(mask_path):
     """
     mask_ori = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
 
-    mask = np.array((mask_ori / 255.0) > 0.5, dtype=int)
+    mask = np.array(mask_ori > 127.5, dtype=int)
 
     # get masks labelled with different values
     label_im, nb_labels = ndimage.label(mask)
@@ -152,11 +149,8 @@ def get_mask_description(mask_path):
     sizes = []
     positions = []
 
-    multiple = False
     num = nb_labels
     for i in range(nb_labels):
-        if i > 0:
-            multiple = True
         mask_compare = np.full(np.shape(label_im), i + 1)
         # check equality test and have the value 1 on the location of each mask
         separate_mask = np.equal(label_im, mask_compare).astype(int) * mask_ori
@@ -179,9 +173,7 @@ def get_mask_description(mask_path):
         posnonzero = {k: v for k, v in pos.items() if v != 0}
         pos_str = ""
 
-        if len(posnonzero) == 0:
-            pass
-        elif len(posnonzero) == 1:
+        if len(posnonzero) == 1:
             pos_str = list(posnonzero.keys())[0]
         elif len(posnonzero) > 1:
             pos_signigicant = {k: v for k, v in pos.items() if v >= 0.1}
@@ -200,7 +192,7 @@ def get_mask_description(mask_path):
 
                 (c_x, c_y) = ((bbox[1] + bbox[3]) / 2, (bbox[0] + bbox[2]) / 2)
 
-                h, w = mask.shape
+                h = mask.shape[0]
                 if c_x < h / 3:
                     p_x = "top"
                 elif c_x >= h / 3 and c_x <= 2 * h / 3:
@@ -243,6 +235,7 @@ def get_mask_description(mask_path):
 
 
 if __name__ == "__main__":
+    import argparse
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--mask_path", type=str, required=True)
