@@ -37,6 +37,7 @@ from monai.metrics import (
     compute_surface_dice,
 )
 from tqdm import tqdm
+import concurrent.futures
 
 
 def compute_metrics(gt_img_path: str, pred_img_path: str):
@@ -74,27 +75,60 @@ def main(args: Namespace):
     np.set_printoptions(precision=4)
 
     filenames = tuple(x for x in os.listdir(args.seg_path) if x.endswith(".png"))
-    with tqdm(filenames, desc="Evaluating metrics") as pbar:
-        for filename in pbar:
+
+    with concurrent.futures.ProcessPoolExecutor(
+        max_workers=args.max_workers
+    ) as executor:
+        futures = {}
+        for filename in filenames:
             gt_img_path = os.path.join(args.gt_path, filename)
             pred_img_path = os.path.join(args.seg_path, filename)
 
-            surface_dice, hausdorff_distance, iou, dice = compute_metrics(
-                gt_img_path, pred_img_path
-            )
+            futures[
+                executor.submit(compute_metrics, gt_img_path, pred_img_path)
+            ] = filename
 
-            surface_dice_list.append(surface_dice)
-            hausdorff_distance_list.append(hausdorff_distance)
-            iou_list.append(iou)
-            dice_list.append(dice)
+        with tqdm(total=len(futures), desc="Evaluating metrics") as pbar:
+            for future in tqdm(concurrent.futures.as_completed(futures)):
+                filename = futures[future]
+                try:
+                    surface_dice, hausdorff_distance, iou, dice = future.result()
+                except Exception as exc:
+                    print(f"{filename} generated an exception: {exc}")
+                else:
+                    surface_dice_list.append(surface_dice)
+                    hausdorff_distance_list.append(hausdorff_distance)
+                    iou_list.append(iou)
+                    dice_list.append(dice)
 
-            pbar.set_postfix(
-                {
-                    "file": filename,
-                    "Mean Dice": np.mean(dice_list),
-                    "Mean IoU": np.mean(iou_list),
-                }
-            )
+                pbar.set_postfix(
+                    {
+                        "Mean Dice": np.mean(dice_list),
+                        "Mean IoU": np.mean(iou_list),
+                    }
+                )
+
+    # with tqdm(filenames, desc="Evaluating metrics") as pbar:
+    #     for filename in pbar:
+    #         gt_img_path = os.path.join(args.gt_path, filename)
+    #         pred_img_path = os.path.join(args.seg_path, filename)
+
+    #         surface_dice, hausdorff_distance, iou, dice = compute_metrics(
+    #             gt_img_path, pred_img_path
+    #         )
+
+    #         surface_dice_list.append(surface_dice)
+    #         hausdorff_distance_list.append(hausdorff_distance)
+    #         iou_list.append(iou)
+    #         dice_list.append(dice)
+
+    #         pbar.set_postfix(
+    #             {
+    #                 "file": filename,
+    #                 "Mean Dice": np.mean(dice_list),
+    #                 "Mean IoU": np.mean(iou_list),
+    #             }
+    #         )
 
     df = pd.DataFrame(
         {
@@ -132,6 +166,12 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--csv_path", type=str, default="metrics.csv", help="path to save csv file"
+    )
+    parser.add_argument(
+        "--max_workers",
+        type=int,
+        default=4,
+        help="maximum number of workers to use for multiprocessing",
     )
 
     args = parser.parse_args()
