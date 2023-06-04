@@ -1,15 +1,16 @@
+import concurrent.futures
 import json
 import os
+import random
 import sys
 from pathlib import Path
 from string import Template
-from typing import Iterable, Union
+from typing import Any, Iterable, Tuple, Union
 
-import pandas as pd
-
-from features_from_img import mask_to_overall_bbox, get_mask_description
+from features_from_img import get_mask_description, mask_to_overall_bbox
 from PIL import Image
 from tqdm import tqdm
+from script_utils import assert_split_ratio, get_train_val_test
 
 sys.path.append("/mnt/Enterprise/miccai_2023_CRIS/vqa_dir/OFA/")
 
@@ -57,189 +58,254 @@ mask_index = [
 
 p0 = ""
 
-p1_template = convert_str_to_template("Chest Xray, with $labels")
+p1_template = convert_str_to_template("Chest Xray, segment $labels")
 
 p2_template = convert_str_to_template(
-    "Chest Xray, $xray_view view, with $labels",
+    "Chest Xray, $xray_view view, segment $labels",
 )
 
 p3_template = convert_str_to_template(
-    "Chest Xray, $xray_view view, with $labels, of shape $shape"
+    "Chest Xray, $xray_view view, segment $labels, of shape $shape"
 )
 
 p4_template = convert_str_to_template(
-    "Chest Xray, $xray_view view, with $labels, of shape $shape, and located in $location of the image"
+    "Chest Xray, $xray_view view, segment $labels, of shape $shape, and located in $location of the image"
 )
 
 
-def get_image_mask_paths(img_dir, mask_dir, mask_name):
-    img_dir = Path(img_dir)
-    image_paths = list(img_dir.glob("*.jpg"))
-    assert len(image_paths) > 0, "No images found in the image directory."
-
-    mask_dir = Path(mask_dir)
-    mask_paths = list(mask_dir.glob(f"*_{mask_name}*.png"))
-    assert len(mask_paths) > 0, "No files found in the mask directory."
-
-    image_mask_paths = tuple()
-    for image_path in image_paths:
-        mask_path = mask_dir.joinpath(image_path.stem + f"_{mask_name}.png")
-        if mask_path.exists():
-            image_mask_paths += ((image_path, mask_path),)
-    return image_mask_paths
-
-
 def get_json_data(
-    img_dir: StrPath,
+    image_dir: StrPath,
     mask_dir: StrPath,
+    output_dir: StrPath,
+    test_ratio: float,
+    val_ratio: float,
+    max_workers: int,
+    seed: int = 42,
+    verbose: bool = True,
 ):
-    all_image_mask_paths = tuple(
-        get_image_mask_paths(img_dir, mask_dir, mask_name) for mask_name in mask_index
-    )
-
-    # convert all_image_mask_paths to a single list
-    all_image_mask_paths = [
-        image_mask_path
-        for image_mask_paths in all_image_mask_paths
-        for image_mask_path in image_mask_paths
-    ]
-
-    img_mask_prompt_json = []
-
-    vqa_questions_answers = pd.DataFrame(
-        columns=[
-            "question",
-            "answer",
-            "image_path",
-            "mask_path",
-            "mask",
-        ]
-    )
-
-    for i, image_mask_path in enumerate(tqdm(all_image_mask_paths)):
-        image_path, mask_path = image_mask_path
-
-        view, mask_name = mask_path.stem.split("_", 4)[-2:]
-
-        p1 = p1_template.substitute(labels=mask_name)
-
-        p2 = p2_template.substitute(xray_view=view, labels=mask_name)
-
-        with Image.open(image_path) as image, Image.open(mask_path) as mask:
-            shape = get_answer(
-                image,
-                mask,
-                question=f"What is the shape of {mask_name} enclosed in green box?",
-                verbose=True,
-            )
-
-        vqa_questions_answers.loc[i] = [
-            f"What is the shape of {mask_name} enclosed in green box?",
-            shape,
-            image_path,
-            mask_path,
-            mask_name,
-        ]
-
-        p3 = p3_template.substitute(xray_view=view, labels=mask_name, shape=shape)
-
-        location = get_mask_description(str(mask_path))[1]
-
-        p4 = p4_template.substitute(
-            xray_view=view, labels=mask_name, shape=shape, location=location
-        )
-
-        # p5 = [
-        #     temp.substitute(
-        #         num_chambers=num_chambers,
-        #         cycle=cycle,
-        #         age=age,
-        #         gender=gender,
-        #         image_quality=image_quality,
-        #     )
-        #     for temp in p5_templates
-        # ]
-
-        bbox = mask_to_overall_bbox(str(mask_path))
-
-        # mask_name = mask_path.stem + f"_{label_index}" + mask_path.suffix
-
-        img_name = image_path.name
-
-        sent = [{"idx": 0, "sent_id": i, "sent": ""}]
-        op = {
-            "bbox": bbox,
-            "cat": 0,
-            "segment_id": image_path.stem,
-            "img_name": img_name,
-            "mask_name": mask_path.name,
-            "sentences": sent,
-            "sentences_num": 1,
-            "prompts": {
-                "p0": p0,
-                "p1": p1,
-                "p2": p2,
-                "p3": p3,
-                "p4": p4,
-                # "p5": p5,
-            },
-        }
-
-        img_mask_prompt_json.append(op)
-    return img_mask_prompt_json, vqa_questions_answers
-
-
-def get_splits_json(base_dir: StrPath, output_dir: StrPath):
-    base_dir = Path(base_dir)
-    output_dir = Path(output_dir)
-
-    val_img_dir = base_dir.joinpath("val_images")
-    val_mask_dir = base_dir.joinpath("val_masks")
-
-    test_img_dir = base_dir.joinpath("test_images")
-    test_mask_dir = base_dir.joinpath("test_masks")
-
-    train_json = []
-    val_json, vqa_questions_answers_val = get_json_data(val_img_dir, val_mask_dir)
-    test_json, vqa_questions_answers_test = get_json_data(test_img_dir, test_mask_dir)
+    assert_split_ratio(val_ratio=val_ratio, test_ratio=test_ratio)
 
     os.makedirs(output_dir, exist_ok=True)
 
-    train_json_path = output_dir.joinpath("train.json")
-    val_json_path = output_dir.joinpath("val.json")
-    test_json_path_A = output_dir.joinpath("testA.json")
-    test_json_path_B = output_dir.joinpath("testB.json")
+    image_dir = Path(image_dir)
+    image_paths = list(image_dir.glob("*.jpg"))
+    assert len(image_paths) > 0, "No images found in the image directory."
 
-    with open(train_json_path, "w") as f:
+    mask_dir = Path(mask_dir)
+
+    image_mask_paths = []
+    for image_path in image_paths:
+        for mask_name in mask_index:
+            mask_path = mask_dir.joinpath(image_path.stem + f"_{mask_name}.png")
+            if mask_path.exists():
+                image_mask_paths += ((image_path, mask_path),)
+
+    assert len(image_mask_paths) > 0, "No masks found in the mask directory."
+
+    # Split on patient level
+    patient_ids = set(map(get_patient_id_from_image_mask_path, image_mask_paths))
+
+    # set the random seed
+    random.seed(seed)
+
+    _, val_patient_ids, test_patient_ids = get_train_val_test(
+        patient_ids, val_ratio, test_ratio
+    )
+
+    val_patient_ids = set(val_patient_ids)
+    test_patient_ids = set(test_patient_ids)
+
+    train_image_mask_paths = []
+    val_image_mask_paths = []
+    test_image_mask_paths = []
+
+    for image_mask_path in image_mask_paths:
+        patient_id = get_patient_id_from_image_mask_path(image_mask_path)
+        if patient_id in val_patient_ids:
+            val_image_mask_paths += (image_mask_path,)
+        elif patient_id in test_patient_ids:
+            test_image_mask_paths += (image_mask_path,)
+        else:
+            train_image_mask_paths += (image_mask_path,)
+
+    train_json = []
+    val_json = []
+    test_json = []
+
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        futures_to_image_mask_path = {}
+        for image_mask_path in image_mask_paths:
+            future = executor.submit(get_single_json, image_mask_path=image_mask_path)
+            futures_to_image_mask_path[future] = image_mask_path
+
+        for future in tqdm(
+            concurrent.futures.as_completed(futures_to_image_mask_path),
+            total=len(futures_to_image_mask_path),
+        ):
+            image_mask_path = futures_to_image_mask_path[future]
+
+            try:
+                img_mask_prompt_json = future.result()
+            except Exception as exc:
+                print(f"{image_mask_path} generated an exception: {exc}")
+            else:
+                patient_id = get_patient_id_from_image_mask_path(image_mask_path)
+                if patient_id in val_patient_ids:
+                    val_json.append(img_mask_prompt_json)
+                elif patient_id in test_patient_ids:
+                    test_json.append(img_mask_prompt_json)
+                else:
+                    train_json.append(img_mask_prompt_json)
+
+    if verbose:
+        print("Train, Val, Test")
+        print(
+            len(train_image_mask_paths),
+            len(val_image_mask_paths),
+            len(test_image_mask_paths),
+        )
+
+        # find occurrence of each of item in mask_index in the train, val and test set
+        train_occurrence = {mask_name: 0 for mask_name in mask_index}
+        val_occurrence = {mask_name: 0 for mask_name in mask_index}
+        test_occurrence = {mask_name: 0 for mask_name in mask_index}
+
+        for image_mask_path in train_image_mask_paths:
+            for mask_name in mask_index:
+                mask_path = image_mask_path[1]
+                if mask_name in mask_path.stem:
+                    train_occurrence[mask_name] += 1
+
+        for image_mask_path in val_image_mask_paths:
+            for mask_name in mask_index:
+                mask_path = image_mask_path[1]
+                if mask_name in mask_path.stem:
+                    val_occurrence[mask_name] += 1
+
+        for image_mask_path in test_image_mask_paths:
+            for mask_name in mask_index:
+                mask_path = image_mask_path[1]
+                if mask_name in mask_path.stem:
+                    test_occurrence[mask_name] += 1
+
+        # also find if any image path is in more than one set
+        train_image_paths = set(map(lambda x: x[0], train_image_mask_paths))
+        val_image_paths = set(map(lambda x: x[0], val_image_mask_paths))
+        test_image_paths = set(map(lambda x: x[0], test_image_mask_paths))
+
+        assert (
+            len(train_image_paths.intersection(val_image_paths)) == 0
+        ), "Some image paths are in both train and val set"
+
+        assert (
+            len(train_image_paths.intersection(test_image_paths)) == 0
+        ), "Some image paths are in both train and test set"
+
+        assert (
+            len(val_image_paths.intersection(test_image_paths)) == 0
+        ), "Some image paths are in both val and test set"
+
+        print(train_occurrence)
+        print(val_occurrence)
+        print(test_occurrence)
+
+    with open(output_dir / "train.json", "w") as f:
         json.dump(train_json, f)
 
-    with open(val_json_path, "w") as f:
+    with open(output_dir / "val.json", "w") as f:
         json.dump(val_json, f)
 
-    with open(test_json_path_A, "w") as f:
+    with open(output_dir / "testA.json", "w") as f:
         json.dump(test_json, f)
 
-    with open(test_json_path_B, "w") as f:
+    with open(output_dir / "testB.json", "w") as f:
         json.dump(test_json, f)
 
-    vqa_questions_answers_val.to_csv(
-        output_dir.joinpath("vqa_questions_answers_val.csv"), index=False
+
+def get_patient_id_from_image_mask_path(image_mask_path: Tuple[Path, Any]):
+    image_path, _ = image_mask_path
+    patient_id = image_path.stem.split("_")[0]
+    return patient_id
+
+
+def get_single_json(image_mask_path: Tuple[Path, Path]):
+    """
+    Get json for a single image-mask pair
+
+    Parameters
+    ----------
+    image_mask_path : Tuple[Path, Path]
+        [Tuple of paths of image and mask]
+
+    Returns
+    -------
+    img_mask_prompt_json : Dict
+        [Json with image, mask and prompts]
+    """
+    image_path, mask_path = image_mask_path
+
+    view, mask_name = mask_path.stem.split("_", 4)[-2:]
+
+    p1 = p1_template.substitute(labels=mask_name)
+
+    p2 = p2_template.substitute(xray_view=view, labels=mask_name)
+
+    with Image.open(image_path) as image, Image.open(mask_path) as mask:
+        shape = get_answer(
+            image,
+            mask,
+            question=f"What is the shape of {mask_name} enclosed in green box?",
+            verbose=False,
+        )
+
+    p3 = p3_template.substitute(xray_view=view, labels=mask_name, shape=shape)
+
+    location = get_mask_description(str(mask_path))[1]
+
+    p4 = p4_template.substitute(
+        xray_view=view, labels=mask_name, shape=shape, location=location
     )
-    vqa_questions_answers_test.to_csv(
-        output_dir.joinpath("vqa_questions_answers_test.csv"), index=False
-    )
+
+    bbox = mask_to_overall_bbox(str(mask_path))
+
+    img_name = image_path.name
+
+    sent = [{"idx": 0, "sent_id": i, "sent": ""}]
+    return {
+        "bbox": bbox,
+        "cat": 0,
+        "segment_id": image_path.stem,
+        "img_name": img_name,
+        "mask_name": mask_path.name,
+        "sentences": sent,
+        "sentences_num": 1,
+        "prompts": {
+            "p0": p0,
+            "p1": p1,
+            "p2": p2,
+            "p3": p3,
+            "p4": p4,
+        },
+    }
 
 
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--base-dir", type=Path, required=True)
-    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("-i", "--image-dir", type=Path, required=True)
+    parser.add_argument("-m", "--mask-dir", type=Path, required=True)
+    parser.add_argument("-o", "--output-dir", type=Path, required=True)
+    parser.add_argument("-t", "--test-ratio", type=float, default=0.2)
+    parser.add_argument("-v", "--val-ratio", type=float, default=0.2)
+    parser.add_argument("-s", "--seed", type=int, default=42)
+    parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--max-workers", type=int, default=None)
 
     args = parser.parse_args()
 
     print(args)
-    get_splits_json(**vars(args))
+    # get_splits_json(**vars(args))
+    get_json_data(**vars(args))
 
     print("Annotations Created")
