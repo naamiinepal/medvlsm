@@ -1,8 +1,11 @@
-from typing import Optional, Union
+from typing import Any, Optional, Union
 import SimpleITK as sitk
 from SimpleITK.extra import PathType as SiTKPathType
 from pathlib import Path
 import concurrent.futures
+import numpy as np
+import skimage as sk
+from tqdm import tqdm
 
 StrPath = Union[str, Path]
 
@@ -10,14 +13,16 @@ StrPath = Union[str, Path]
 def load_and_save(
     filename: SiTKPathType,
     output_filename: SiTKPathType,
-    mask_index: Optional[int] = None,
+    mask_index: Optional[int],
+    resample_size: Optional[int],
+    order: int,
 ):
     """Load a SimpleITK image and save it with compression level of 9.
 
     Args:
         filename (SiTKPathType): The path to the image
         output_filename (SiTKPathType): The path to save the image
-        mask_index (Optional[int], optional): The mask index to convert multiclass to binary mask. Defaults to None.
+        mask_index (Optional[int]): The mask index to convert multiclass to binary mask.
     """
 
     # Reads the image using SimpleITK
@@ -33,6 +38,24 @@ def load_and_save(
         # )
         itkimage = (itkimage == mask_index) * 255
 
+        # Overwride the order for binary mask
+        order = 0
+
+    if resample_size is not None:
+        # Resample the image to a specified size
+        np_img = sitk.GetArrayFromImage(itkimage).squeeze()
+
+        np_img = sk.transform.resize(
+            np_img,
+            (resample_size, resample_size),
+            order=order,
+            mode="constant",
+            preserve_range=True,
+            anti_aliasing=False,
+        ).astype(np.uint8)
+
+        itkimage = sitk.GetImageFromArray(np_img)
+
     # Save with compression level of 9
     return sitk.WriteImage(
         itkimage, output_filename, useCompression=True, compressionLevel=9
@@ -40,49 +63,53 @@ def load_and_save(
 
 
 def main(
-    image_root: StrPath,
+    image_root: Path,
     glob_pattern: str,
-    out_dir: StrPath,
+    out_dir: Path,
     out_ext: str,
-    mask_index: Optional[int] = None,
-    max_workers: Optional[int] = None,
+    mask_index: Optional[int],
+    max_workers: Optional[int],
+    resample_size: Optional[int],
+    order: int,
 ):
     """Convert a directory of SimpleITK images to a directory of images with a specified extension.
 
     Args:
-        image_root (StrPath): The root directory of input images
+        image_root (Path): The root directory of input images
         glob_pattern (str): The glob pattern for the input images
-        out_dir (StrPath): The path to output directory
+        out_dir (Path): The path to output directory
         out_ext (str): The extension of output images
         mask_index (Optional[int], optional): The mask index to convert multiclass to binary mask. Defaults to None.
         max_workers (Optional[int], optional): The max workers for multiprocessing. Defaults to None.
     """
-    image_root = Path(image_root)
-
-    out_dir = Path(out_dir)
-
     # Create the output directory if it doesn't exist
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    print("Starting conversion...")
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures = {}
         for image_path in image_root.rglob(glob_pattern):
             image_name = image_path.stem
             output_filename = out_dir / (image_name + out_ext)
-            f = executor.submit(load_and_save, image_path, output_filename, mask_index)
+            f = executor.submit(
+                load_and_save,
+                image_path,
+                output_filename,
+                mask_index,
+                resample_size,
+                order,
+            )
             futures[f] = (image_path, output_filename)
 
-        for future in concurrent.futures.as_completed(futures):
+        pbar = tqdm(concurrent.futures.as_completed(futures), total=len(futures))
+
+        for future in pbar:
             img_path, out_fname = futures[future]
             try:
                 future.result()
             except Exception as exc:
                 print(f"{img_path} generated an exception: {exc}")
             else:
-                print(f"{img_path} converted to {out_fname}")
-
-    print("Conversion finished!")
+                pbar.set_postfix({"in": img_path.name, "out": out_fname.name})
 
 
 if __name__ == "__main__":
@@ -117,14 +144,19 @@ if __name__ == "__main__":
     parser.add_argument(
         "--max-workers", type=int, default=None, help="Max workers for multiprocessing"
     )
+    parser.add_argument(
+        "--resample-size",
+        type=int,
+        default=None,
+        help="Resample size for resampling",
+    )
+    parser.add_argument(
+        "--order",
+        type=int,
+        default=3,
+        help="Interpolation order for resampling",
+    )
 
     args = parser.parse_args()
 
-    main(
-        args.image_root,
-        args.glob_pattern,
-        args.out_dir,
-        args.out_ext,
-        args.mask_index,
-        args.max_workers,
-    )
+    main(**vars(args))

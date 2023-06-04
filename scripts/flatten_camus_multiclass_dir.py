@@ -1,5 +1,5 @@
-from pathlib import Path
 import shutil
+from pathlib import Path
 
 
 def main(root_dir: Path, glob_pattern: str, unified_dir: Path):

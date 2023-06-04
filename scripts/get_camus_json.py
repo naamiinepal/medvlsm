@@ -1,11 +1,15 @@
-import json
-from pathlib import Path
-import random
-from typing import Optional, Tuple, Union, Iterable
-from string import Template
-from features_from_img import mask_to_overall_bbox
 import concurrent.futures
+import json
+import random
+from pathlib import Path
+from string import Template
+from typing import Any, Iterable, Optional, Tuple, Union
+from collections import defaultdict
+
+from features_from_img import mask_to_overall_bbox
 from num2words import num2words
+from tqdm import tqdm
+from utils import assert_split_ratio, get_train_val_test
 
 StrPath = Union[str, Path]
 
@@ -26,44 +30,50 @@ def convert_str_to_template(temp_str: Union[Iterable[str], str]):
     return tuple(map(Template, temp_str))
 
 
-# ["Two chamber view of the heart"], ["Two chamber view in the cardiac ultrasound"]
-# ["Two chamber view of the heart at dystole"], ["Two chamber view in the cardiac ultrasound at dystole"]
-# ["Two chamber view of the heart at dystole of a female"], ["Two chamber view in the cardiac ultrasound at dystole of a female"]
-# ["Two chamber view of the heart at dystole of a 40 year-old female"], ["Two chamber view in the cardiac ultrasound at dystole of a 40 year-old female"]
-# ["Two chamber view of the heart at dystole of a 40 year-old female with poor image quality"],
-#       ["Two chamber view in the cardiac ultrasound at dystole of a 40 year-old female with poor image quality"]
-
-mask_index_to_parts = ["left ventricular cavity", "myocardium", "left atrium cavity"]
+mask_index_to_parts = ["Left ventricular cavity", "Myocardium", "Left atrium cavity"]
 
 p0 = ""
 
-p1_base = ("Echocardiography", "Cardiac Ultrasound")
+p1_templates = convert_str_to_template(
+    (
+        "$label_name of the heart.",
+        "$label_name in the cardiac ultrasound.",
+    )
+)
+
 
 p2_templates = convert_str_to_template(
     (
-        "$num_chambers chamber view of the heart at end of $cycle cycle.",
-        "$num_chambers chamber view in the cardiac ultrasound at end of $cycle cycle.",
+        "$label_name in $num_chambers-chamber view of the heart.",
+        "$label_name in $num_chambers-chamber view in the cardiac ultrasound.",
     )
 )
 
 p3_templates = convert_str_to_template(
     (
-        "$num_chambers chamber view of the heart at end of $cycle cycle of a $gender.",
-        "$num_chambers chamber view in the cardiac ultrasound at end of $cycle cycle of a $gender.",
+        "$label_name in $num_chambers-chamber view of the heart at end of the $cycle cycle.",
+        "$label_name in $num_chambers-chamber view in the cardiac ultrasound at end of the $cycle cycle.",
     )
 )
 
 p4_templates = convert_str_to_template(
     (
-        "$num_chambers chamber view of the heart at end of $cycle cycle of a $age year-old $gender.",
-        "$num_chambers chamber view in the cardiac ultrasound at end of $cycle cycle of a $age year-old $gender.",
+        "$label_name in $num_chambers-chamber view of the heart at end of the $cycle cycle of a $gender.",
+        "$label_name in $num_chambers-chamber view in the cardiac ultrasound at end of the $cycle cycle of a $gender.",
     )
 )
 
 p5_templates = convert_str_to_template(
     (
-        "$num_chambers chamber view of the heart at end of $cycle cycle of a $age year-old $gender with $image_quality image quality.",
-        "$num_chambers chamber view in the cardiac ultrasound at end of $cycle cycle of a $age year-old $gender with $image_quality image quality.",
+        "$label_name in $num_chambers-chamber view of the heart at end of the $cycle cycle of a $age-year-old $gender.",
+        "$label_name in $num_chambers-chamber view in the cardiac ultrasound at end of the $cycle cycle of a $age-year-old $gender.",
+    )
+)
+
+p6_templates = convert_str_to_template(
+    (
+        "$label_name in $num_chambers-chamber view of the heart at end of the $cycle cycle of a $age-year-old $gender with $image_quality image quality.",
+        "$label_name in $num_chambers-chamber view in the cardiac ultrasound at end of the $cycle cycle of a $age-year-old $gender with $image_quality image quality.",
     )
 )
 
@@ -109,18 +119,22 @@ def get_single_json(
     # Subtract to get the index in the list
     label_name = mask_index_to_parts[label_index - 1]
 
-    p1 = [*p1_base, label_name]
+    temp_sub_kwargs = {"label_name": label_name}
+    p1 = [temp.substitute(**temp_sub_kwargs) for temp in p1_templates]
 
     mask_path_stem = mask_path.stem
 
     patient_id, _chamber, _stage, *_ = mask_path_stem.split("_")
 
-    num_chambers = "Two" if _chamber == "2CH" else "Four"
-    cycle = "systole" if _stage == "ES" else "dystole"
+    num_chambers = "two" if _chamber == "2CH" else "four"
 
-    p2 = [
-        temp.substitute(num_chambers=num_chambers, cycle=cycle) for temp in p2_templates
-    ]
+    temp_sub_kwargs["num_chambers"] = num_chambers
+    p2 = [temp.substitute(**temp_sub_kwargs) for temp in p2_templates]
+
+    cycle = "systole" if _stage == "ES" else "diastole"
+
+    temp_sub_kwargs["cycle"] = cycle
+    p3 = [temp.substitute(**temp_sub_kwargs) for temp in p3_templates]
 
     with open(raw_root / patient_id / f"Info_{_chamber}.cfg") as f:
         content = f.read()
@@ -138,30 +152,18 @@ def get_single_json(
 
     gender = "female" if _gender == "F" else "male"
 
-    p3 = [
-        temp.substitute(num_chambers=num_chambers, cycle=cycle, gender=gender)
-        for temp in p3_templates
-    ]
+    temp_sub_kwargs["gender"] = gender
+    p4 = [temp.substitute(**temp_sub_kwargs) for temp in p4_templates]
 
     age = num2words(key_value_mapping["Age"])
 
-    p4 = [
-        temp.substitute(num_chambers=num_chambers, cycle=cycle, age=age, gender=gender)
-        for temp in p4_templates
-    ]
+    temp_sub_kwargs["age"] = age
+    p5 = [temp.substitute(**temp_sub_kwargs) for temp in p5_templates]
 
     image_quality = key_value_mapping["ImageQuality"].lower()
 
-    p5 = [
-        temp.substitute(
-            num_chambers=num_chambers,
-            cycle=cycle,
-            age=age,
-            gender=gender,
-            image_quality=image_quality,
-        )
-        for temp in p5_templates
-    ]
+    temp_sub_kwargs["image_quality"] = image_quality
+    p6 = [temp.substitute(**temp_sub_kwargs) for temp in p6_templates]
 
     bbox = mask_to_overall_bbox(str(mask_path))
 
@@ -184,6 +186,7 @@ def get_single_json(
             "p3": p3,
             "p4": p4,
             "p5": p5,
+            "p6": p6,
         },
     }
 
@@ -215,11 +218,7 @@ def get_json_data(
         seed (Union[int, float, str, bytes, bytearray, None]): The seed for random choices
     """
 
-    assert val_ratio >= 0, "Validation set percent should be greater than 0."
-    assert test_ratio >= 0, "Test set percent should be greater than 0."
-    assert (
-        val_ratio + test_ratio <= 1
-    ), "The sum of percent of validation set and test set should be less or equal to 1"
+    assert_split_ratio(val_ratio=val_ratio, test_ratio=test_ratio)
 
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -256,22 +255,18 @@ def get_json_data(
 
     image_mask_paths = tuple(zip(image_paths, mask_paths))
 
+    # Split on patient level
+    patient_ids = set(map(get_patient_id_from_image_mask_path, image_mask_paths))
+
     # Set the random seed
     random.seed(seed)
 
-    val_size = int(val_ratio * len(image_mask_paths))
-    val_data = set(random.sample(image_mask_paths, val_size))
+    _, val_patient_ids, test_patient_ids = get_train_val_test(
+        patient_ids, val_ratio, test_ratio
+    )
 
-    rem_data = tuple(x for x in image_mask_paths if x not in val_data)
-
-    test_size = int(test_ratio * len(image_mask_paths))
-    test_data = set(random.sample(rem_data, test_size))
-
-    train_data = tuple(x for x in rem_data if x not in test_data)
-
-    assert len(val_data) + len(test_data) + len(train_data) == len(
-        image_mask_paths
-    ), "Data split is invalid."
+    val_patient_ids = set(val_patient_ids)
+    test_patient_ids = set(test_patient_ids)
 
     raw_root = Path("/mnt/Enterprise/PUBLIC_DATASETS/camus_database/training")
 
@@ -282,33 +277,47 @@ def get_json_data(
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures_to_image_mask_path = {}
         for i, image_mask_path in enumerate(image_mask_paths, 1):
-            f = executor.submit(
+            future = executor.submit(
                 get_single_json, default_prompt, raw_root, i, image_mask_path
             )
-            futures_to_image_mask_path[f] = image_mask_path
+            futures_to_image_mask_path[future] = image_mask_path
 
-        for i, f in enumerate(
-            concurrent.futures.as_completed(futures_to_image_mask_path), 1
+        for future in tqdm(
+            concurrent.futures.as_completed(futures_to_image_mask_path),
+            total=len(futures_to_image_mask_path),
         ):
-            image_mask_path = futures_to_image_mask_path[f]
+            image_mask_path = futures_to_image_mask_path[future]
 
             try:
-                op = f.result()
+                op = future.result()
             except Exception as e:
-                print(f"Exception occurred at {i}/{len(image_mask_paths)} images")
                 print(f"Image path: {image_mask_path}")
                 print(f"Exception: {e}")
             else:
-                if image_mask_path in train_data:
-                    train_json.append(op)
-                elif image_mask_path in val_data:
+                patient_id = get_patient_id_from_image_mask_path(image_mask_path)
+
+                if patient_id in val_patient_ids:
                     val_json.append(op)
-                else:  # for test data
+                elif patient_id in test_patient_ids:
                     test_json.append(op)
+                else:  # for train data
+                    train_json.append(op)
 
-                print(f"Processed {i}/{len(image_mask_paths)} images")
+    print("\n\nLengths", len(train_json), len(val_json), len(test_json))
 
-    print(len(train_json), len(val_json), len(test_json))
+    print(
+        "Expected Proportion",
+        1 - val_ratio - test_ratio,
+        val_ratio,
+        test_ratio,
+    )
+
+    print(
+        "Actual Proportion",
+        len(train_json) / len(image_mask_paths),
+        len(val_json) / len(image_mask_paths),
+        len(test_json) / len(image_mask_paths),
+    )
 
     with open(output_dir / "train.json", "w") as of:
         json.dump(train_json, of)
@@ -321,6 +330,13 @@ def get_json_data(
 
     with open(output_dir / "testB.json", "w") as of:
         json.dump(test_json, of)
+
+
+def get_patient_id_from_image_mask_path(image_mask_path: Tuple[Path, Any]):
+    image_path, _ = image_mask_path
+
+    patient_id = image_path.stem.split("_", 1)[0]
+    return patient_id
 
 
 if __name__ == "__main__":
@@ -340,7 +356,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    print(args, end="\n\n")
     get_json_data(**vars(args))
-
-    print("Annotations Created")
