@@ -76,6 +76,7 @@ def main(args: Namespace):
 
     filenames = tuple(x for x in os.listdir(args.seg_path) if x.endswith(".png"))
 
+    result_filenames = []
     with concurrent.futures.ProcessPoolExecutor(
         max_workers=args.max_workers
     ) as executor:
@@ -96,6 +97,7 @@ def main(args: Namespace):
                 except Exception as exc:
                     print(f"{filename} generated an exception: {exc}")
                 else:
+                    result_filenames.append(filename)
                     surface_dice_list.append(surface_dice)
                     hausdorff_distance_list.append(hausdorff_distance)
                     iou_list.append(iou)
@@ -132,7 +134,7 @@ def main(args: Namespace):
 
     df = pd.DataFrame(
         {
-            "filename": filenames,
+            "filename": result_filenames,
             "surface_dice": surface_dice_list,
             "hausdorff_distance": hausdorff_distance_list,
             "iou": iou_list,
@@ -140,17 +142,20 @@ def main(args: Namespace):
         }
     )
 
-    print("Mean surface dice: ", np.mean(surface_dice_list))
-    print("Std surface dice: ", np.std(surface_dice_list))
-
-    print("Mean hausdorff distance: ", np.mean(hausdorff_distance_list))
-    print("Std hausdorff distance: ", np.std(hausdorff_distance_list))
-
-    print("Mean iou: ", np.mean(iou_list))
-    print("Std iou: ", np.std(iou_list))
-
-    print("Mean dice: ", np.mean(dice_list))
-    print("Std dice: ", np.std(dice_list))
+    print(
+        "Surface Dice:",
+        np.mean(surface_dice_list).round(4),
+        "+/-",
+        np.std(surface_dice_list).round(4),
+    )
+    print(
+        "Hausdorff Distance:",
+        np.mean(hausdorff_distance_list).round(4),
+        "+/-",
+        np.std(hausdorff_distance_list).round(4),
+    )
+    print("IoU:", np.mean(iou_list).round(4), "+/-", np.std(iou_list).round(4))
+    print("Dice:", np.mean(dice_list).round(4), "+/-", np.std(dice_list).round(4))
 
     df.to_csv(args.csv_path, index=False, float_format="%.4f")
     print(f"Saved metrics to {args.csv_path}")
