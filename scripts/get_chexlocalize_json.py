@@ -11,9 +11,9 @@ from features_from_img import mask_to_overall_bbox, get_mask_description
 from PIL import Image
 from tqdm import tqdm
 
-sys.path.append("/mnt/Enterprise/miccai_2023_CRIS/vqa_dir/OFA/")
+sys.path.append("/mnt/Enterprise/kanchan/VLM-SEG-2023/OFA/")
 
-from single_inference import get_answer
+from single_img_inference import get_answer, return_model
 
 StrPath = Union[str, Path]
 
@@ -115,6 +115,7 @@ def get_json_data(
             "mask",
         ]
     )
+    models = return_model(_use_fp16=True)
 
     for i, image_mask_path in enumerate(tqdm(all_image_mask_paths)):
         image_path, mask_path = image_mask_path
@@ -127,10 +128,11 @@ def get_json_data(
 
         with Image.open(image_path) as image, Image.open(mask_path) as mask:
             shape = get_answer(
-                image,
-                mask,
+                models=models,
+                image=image,
+                mask=mask,
                 question=f"What is the shape of {mask_name} enclosed in green box?",
-                verbose=True,
+                verbose=False,
             )
 
         vqa_questions_answers.loc[i] = [
