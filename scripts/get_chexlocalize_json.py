@@ -10,7 +10,7 @@ from typing import Any, Iterable, Tuple, Union
 from features_from_img import get_mask_description, mask_to_overall_bbox
 from PIL import Image
 from tqdm import tqdm
-from script_utils import assert_split_ratio, get_train_val_test
+from scripts.utils import assert_split_ratio, get_train_val_test
 
 sys.path.append("/mnt/Enterprise/miccai_2023_CRIS/vqa_dir/OFA/")
 
@@ -132,30 +132,42 @@ def get_json_data(
     val_json = []
     test_json = []
 
-    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-        futures_to_image_mask_path = {}
-        for image_mask_path in image_mask_paths:
-            future = executor.submit(get_single_json, image_mask_path=image_mask_path)
-            futures_to_image_mask_path[future] = image_mask_path
+    # with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+    #     futures_to_image_mask_path = {}
+    #     for image_mask_path in image_mask_paths:
+    #         future = executor.submit(get_single_json, image_mask_path=image_mask_path)
+    #         futures_to_image_mask_path[future] = image_mask_path
 
-        for future in tqdm(
-            concurrent.futures.as_completed(futures_to_image_mask_path),
-            total=len(futures_to_image_mask_path),
-        ):
-            image_mask_path = futures_to_image_mask_path[future]
+    #     for future in tqdm(
+    #         concurrent.futures.as_completed(futures_to_image_mask_path),
+    #         total=len(futures_to_image_mask_path),
+    #     ):
+    #         image_mask_path = futures_to_image_mask_path[future]
 
-            try:
-                img_mask_prompt_json = future.result()
-            except Exception as exc:
-                print(f"{image_mask_path} generated an exception: {exc}")
-            else:
-                patient_id = get_patient_id_from_image_mask_path(image_mask_path)
-                if patient_id in val_patient_ids:
-                    val_json.append(img_mask_prompt_json)
-                elif patient_id in test_patient_ids:
-                    test_json.append(img_mask_prompt_json)
-                else:
-                    train_json.append(img_mask_prompt_json)
+    #         try:
+    #             img_mask_prompt_json = future.result()
+    #         except Exception as exc:
+    #             print(f"{image_mask_path} generated an exception: {exc}")
+    #         else:
+    #             patient_id = get_patient_id_from_image_mask_path(image_mask_path)
+    #             if patient_id in val_patient_ids:
+    #                 val_json.append(img_mask_prompt_json)
+    #             elif patient_id in test_patient_ids:
+    #                 test_json.append(img_mask_prompt_json)
+    #             else:
+    #                 train_json.append(img_mask_prompt_json)
+
+    for idx, image_mask_path in enumerate(
+        tqdm(image_mask_paths, total=len(image_mask_paths))
+    ):
+        img_mask_prompt_json = get_single_json(image_mask_path=image_mask_path, idx=idx)
+        patient_id = get_patient_id_from_image_mask_path(image_mask_path)
+        if patient_id in val_patient_ids:
+            val_json.append(img_mask_prompt_json)
+        elif patient_id in test_patient_ids:
+            test_json.append(img_mask_prompt_json)
+        else:
+            train_json.append(img_mask_prompt_json)
 
     if verbose:
         print("Train, Val, Test")
@@ -228,7 +240,7 @@ def get_patient_id_from_image_mask_path(image_mask_path: Tuple[Path, Any]):
     return patient_id
 
 
-def get_single_json(image_mask_path: Tuple[Path, Path]):
+def get_single_json(image_mask_path: Tuple[Path, Path], idx: int):
     """
     Get json for a single image-mask pair
 
@@ -270,7 +282,7 @@ def get_single_json(image_mask_path: Tuple[Path, Path]):
 
     img_name = image_path.name
 
-    sent = [{"idx": 0, "sent_id": i, "sent": ""}]
+    sent = [{"idx": 0, "sent_id": idx, "sent": ""}]
     return {
         "bbox": bbox,
         "cat": 0,
