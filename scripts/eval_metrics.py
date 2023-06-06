@@ -23,9 +23,9 @@ Usage:
 """
 
 
-import os
-from argparse import ArgumentParser, Namespace
-
+from argparse import ArgumentParser
+from typing import Optional, Union
+from pathlib import Path
 import cv2
 import numpy as np
 import pandas as pd
@@ -54,8 +54,8 @@ def compute_metrics(gt_img_path: str, pred_img_path: str):
     pred_img[pred_img > 0] = 1
 
     # change images to batch-first tensor [B,C,H,W]
-    gt_img = torch.from_numpy(gt_img).unsqueeze(0).unsqueeze(0)
-    pred_img = torch.from_numpy(pred_img).unsqueeze(0).unsqueeze(0)
+    gt_img = torch.from_numpy(gt_img)[None, None, ...]
+    pred_img = torch.from_numpy(pred_img)[None, None, ...]
 
     # compute the metrics
     surface_dice = compute_surface_dice(pred_img, gt_img, class_thresholds=[0.5])
@@ -66,31 +66,36 @@ def compute_metrics(gt_img_path: str, pred_img_path: str):
     return surface_dice.item(), hausdorff_distance.item(), iou.item(), dice.item()
 
 
-def main(args: Namespace):
-    surface_dice_list = []
-    hausdorff_distance_list = []
-    iou_list = []
-    dice_list = []
-
+def main(
+    seg_path: Path,
+    gt_path: Path,
+    csv_path: Union[str, Path],
+    max_workers: Optional[int],
+):
     np.set_printoptions(precision=4)
 
-    filenames = tuple(x for x in os.listdir(args.seg_path) if x.endswith(".png"))
-
-    result_filenames = []
-    with concurrent.futures.ProcessPoolExecutor(
-        max_workers=args.max_workers
-    ) as executor:
-        futures = {}
-        for filename in filenames:
-            gt_img_path = os.path.join(args.gt_path, filename)
-            pred_img_path = os.path.join(args.seg_path, filename)
+    futures = {}
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        for filename in seg_path.glob("*.png"):
+            gt_img_path = str(gt_path / filename.name)
+            pred_img_path = str(seg_path / filename.name)
 
             futures[
                 executor.submit(compute_metrics, gt_img_path, pred_img_path)
             ] = filename
 
-        with tqdm(total=len(futures), desc="Evaluating metrics") as pbar:
-            for future in tqdm(concurrent.futures.as_completed(futures)):
+        result_filenames = []
+        surface_dice_list = []
+        hausdorff_distance_list = []
+        iou_list = []
+        dice_list = []
+
+        with tqdm(
+            concurrent.futures.as_completed(futures),
+            total=len(futures),
+            desc="Evaluating metrics",
+        ) as pbar:
+            for future in pbar:
                 filename = futures[future]
                 try:
                     surface_dice, hausdorff_distance, iou, dice = future.result()
@@ -112,8 +117,8 @@ def main(args: Namespace):
 
     # with tqdm(filenames, desc="Evaluating metrics") as pbar:
     #     for filename in pbar:
-    #         gt_img_path = os.path.join(args.gt_path, filename)
-    #         pred_img_path = os.path.join(args.seg_path, filename)
+    #         gt_img_path = os.path.join(gt_path, filename)
+    #         pred_img_path = os.path.join(seg_path, filename)
 
     #         surface_dice, hausdorff_distance, iou, dice = compute_metrics(
     #             gt_img_path, pred_img_path
@@ -142,23 +147,23 @@ def main(args: Namespace):
         }
     )
 
-    print(
-        "Surface Dice:",
-        np.mean(surface_dice_list).round(4),
-        "+/-",
-        np.std(surface_dice_list).round(4),
-    )
-    print(
-        "Hausdorff Distance:",
-        np.mean(hausdorff_distance_list).round(4),
-        "+/-",
-        np.std(hausdorff_distance_list).round(4),
-    )
-    print("IoU:", np.mean(iou_list).round(4), "+/-", np.std(iou_list).round(4))
-    print("Dice:", np.mean(dice_list).round(4), "+/-", np.std(dice_list).round(4))
+    print_mean_std(df, "surface_dice")
+    print_mean_std(df, "hausdorff_distance")
+    print_mean_std(df, "iou")
+    print_mean_std(df, "dice")
 
-    df.to_csv(args.csv_path, index=False, float_format="%.4f")
-    print(f"Saved metrics to {args.csv_path}")
+    df.to_csv(csv_path, index=False, float_format="%.4f")
+    print(f"Saved metrics to {csv_path}")
+
+
+def print_mean_std(df: pd.DataFrame, column_name: str):
+    column = df[column_name]
+    print(
+        column_name.replace("_", " ").title(),
+        column.mean().round(4),
+        "+/-",
+        column.std().round(4),
+    )
 
 
 if __name__ == "__main__":
@@ -166,14 +171,14 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--seg_path",
-        type=str,
-        default="/mnt/Enterprise/safal/VLM-SEG-2023/testdata/pred",
+        type=Path,
+        default=Path("/mnt/Enterprise/safal/VLM-SEG-2023/testdata/pred"),
         help="path to segmentation files",
     )
     parser.add_argument(
         "--gt_path",
-        type=str,
-        default="/mnt/Enterprise/safal/VLM-SEG-2023/testdata/gt",
+        type=Path,
+        default=Path("/mnt/Enterprise/safal/VLM-SEG-2023/testdata/gt"),
         help="path to ground truth files",
     )
     parser.add_argument(
@@ -182,9 +187,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--max_workers",
         type=int,
-        default=4,
+        default=None,
         help="maximum number of workers to use for multiprocessing",
     )
 
     args = parser.parse_args()
-    main(args)
+
+    main(**vars(args))
