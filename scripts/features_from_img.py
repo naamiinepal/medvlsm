@@ -140,9 +140,7 @@ def get_mask_decription(mask_ori, convert_num_to_words=False):
     Returns:
         _type_: _description_
     """
-    mask_ori = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
-
-    mask = np.array(mask_ori > 127.5, dtype=int)
+    mask = np.asarray(mask_ori > 127.5, dtype=int)
 
     # get masks labelled with different values
     label_im, nb_labels = ndimage.label(mask)

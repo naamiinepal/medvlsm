@@ -5,11 +5,18 @@ from pathlib import Path
 from string import Template
 from typing import Iterable, Optional, Tuple, Union
 
-import cv2
+from PIL import Image
+import numpy as np
 from features_from_img import get_mask_decription, mask_to_overall_bbox
 from num2words import num2words
 from tqdm import tqdm
-from utils import assert_split_ratio, get_train_val_test
+from ds_split_utils import assert_split_ratio, get_train_val_test
+
+import sys
+
+sys.path.append("OFA/")
+
+from single_inference import return_model, get_answer
 
 StrPath = Union[str, Path]
 
@@ -23,6 +30,9 @@ p5_template = Template("$tumor_prefix at the $position in the breast ultrasound 
 
 
 def capitalize_iterable(string_iterable: Iterable[str]):
+    if isinstance(string_iterable, str):
+        return string_iterable.capitalize()
+
     return [s.capitalize() for s in string_iterable]
 
 
@@ -30,6 +40,7 @@ def get_single_json(
     default_prompt: str,
     image_index: int,
     image_mask_path: Tuple[Path, Path],
+    model,
 ):
     """Get the json for a single image-mask pair
 
@@ -49,27 +60,38 @@ def get_single_json(
     us_type = image_path.stem.rsplit("_", 1)[-1]
 
     if us_type == "normal":
-        p5 = p4 = p3 = p2 = p1 = generic_template.substitute(
+        p6 = p5 = p4 = p3 = p2 = p1 = generic_template.substitute(
             tumor_prefix="No tumor"
         ).capitalize()
     else:
         p1 = generic_template.substitute(tumor_prefix="tumor")
 
-        regularity = "regular-shaped" if us_type == "benign" else "irregular-shaped"
+        _regularity = "regular" if us_type == "benign" else "irregular"
+        regularity = f"{_regularity}-shaped"
 
         p2 = [
             p2_template.substitute(tumor_type=us_type),
             p2_template.substitute(tumor_type=regularity),
         ]
 
-        mask_ori = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
+        with Image.open(mask_path) as mask:
+            np_mask = np.asarray(mask.convert("L"))
 
-        # sizes, positions, numbers
-        size, position, number = get_mask_decription(
-            mask_ori, convert_num_to_words=False
-        )
+            # sizes, positions, numbers
+            size, position, number = get_mask_decription(
+                np_mask, convert_num_to_words=False
+            )
 
-        assert number > 0, f"No tumor found in the {us_type} case."
+            assert number > 0, f"No tumor found in the {us_type} case."
+
+            with Image.open(image_path) as image:
+                # TODO: Incorporate later on
+                shape = get_answer(
+                    model,
+                    image,
+                    mask,
+                    question="What is the shape of black patch enclosed in the green box?",
+                )
 
         if number > 1:
             word_num = num2words(number)
@@ -102,6 +124,17 @@ def get_single_json(
                     position=position,
                 ),
             ]
+
+            p6 = [
+                p5_template.substitute(
+                    tumor_prefix=f"{word_num} {size} {shape}-shaped {us_type} tumors",
+                    position=position,
+                ),
+                p5_template.substitute(
+                    tumor_prefix=f"{word_num} {size} {shape}-shaped {_regularity} tumors",
+                    position=position,
+                ),
+            ]
         else:
             p3 = [
                 generic_template.substitute(tumor_prefix=f"One {us_type} tumor"),
@@ -124,12 +157,24 @@ def get_single_json(
                 ),
             ]
 
+            p6 = [
+                p5_template.substitute(
+                    tumor_prefix=f"One {size} {shape}-shaped {us_type} tumor",
+                    position=position,
+                ),
+                p5_template.substitute(
+                    tumor_prefix=f"One {size} {shape}-shaped {_regularity} tumor",
+                    position=position,
+                ),
+            ]
+
         # Capitalize the prompts
         p1 = capitalize_iterable(p1)
         p2 = capitalize_iterable(p2)
         p3 = capitalize_iterable(p3)
         p4 = capitalize_iterable(p4)
         p5 = capitalize_iterable(p5)
+        p6 = capitalize_iterable(p6)
 
     bbox = mask_to_overall_bbox(str(mask_path))
 
@@ -148,6 +193,7 @@ def get_single_json(
             "p3": p3,
             "p4": p4,
             "p5": p5,
+            "p6": p6,
         },
     }
 
@@ -223,32 +269,50 @@ def main(
     val_json = []
     test_json = []
 
-    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-        futures_to_image_mask_path = {}
-        for i, image_mask_path in enumerate(image_mask_paths, 1):
-            future = executor.submit(
-                get_single_json, default_prompt, i, image_mask_path
-            )
-            futures_to_image_mask_path[future] = image_mask_path
+    # Load VQA model
+    model = return_model()
 
-        for future in tqdm(
-            concurrent.futures.as_completed(futures_to_image_mask_path),
-            total=len(futures_to_image_mask_path),
+    if max_workers is None or max_workers > 0:
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=max_workers
+        ) as executor:
+            futures_to_image_mask_path = {}
+            for i, image_mask_path in enumerate(image_mask_paths, 1):
+                future = executor.submit(
+                    get_single_json, default_prompt, i, image_mask_path, model
+                )
+                futures_to_image_mask_path[future] = image_mask_path
+
+            for future in tqdm(
+                concurrent.futures.as_completed(futures_to_image_mask_path),
+                total=len(futures_to_image_mask_path),
+            ):
+                image_mask_path = futures_to_image_mask_path[future]
+
+                try:
+                    op = future.result()
+                except Exception as e:
+                    print(f"Image path: {image_mask_path}")
+                    print(f"Exception: {e}")
+                else:
+                    if image_mask_path in val_data:
+                        val_json.append(op)
+                    elif image_mask_path in test_data:
+                        test_json.append(op)
+                    else:  # for train data
+                        train_json.append(op)
+    else:
+        for i, image_mask_path in enumerate(
+            tqdm(image_mask_paths, total=len(image_mask_paths))
         ):
-            image_mask_path = futures_to_image_mask_path[future]
+            op = get_single_json(default_prompt, i, image_mask_path, model)
 
-            try:
-                op = future.result()
-            except Exception as e:
-                print(f"Image path: {image_mask_path}")
-                print(f"Exception: {e}")
-            else:
-                if image_mask_path in val_data:
-                    val_json.append(op)
-                elif image_mask_path in test_data:
-                    test_json.append(op)
-                else:  # for train data
-                    train_json.append(op)
+            if image_mask_path in val_data:
+                val_json.append(op)
+            elif image_mask_path in test_data:
+                test_json.append(op)
+            else:  # for train data
+                train_json.append(op)
 
     print(len(train_json), len(val_json), len(test_json))
 

@@ -4,12 +4,18 @@ import random
 from pathlib import Path
 from string import Template
 from typing import Any, Iterable, Optional, Tuple, Union
-from collections import defaultdict
 
+from PIL import Image
 from features_from_img import mask_to_overall_bbox
 from num2words import num2words
 from tqdm import tqdm
-from utils import assert_split_ratio, get_train_val_test
+from ds_split_utils import assert_split_ratio, get_train_val_test
+
+import sys
+
+sys.path.append("OFA/")
+
+from single_inference import return_model, get_answer
 
 StrPath = Union[str, Path]
 
@@ -77,12 +83,20 @@ p6_templates = convert_str_to_template(
     )
 )
 
+p7_templates = convert_str_to_template(
+    (
+        "$label_name of $shape shape in $num_chambers-chamber view of the heart at end of the $cycle cycle of a $age-year-old $gender with $image_quality image quality.",
+        "$label_name of $shape shape in $num_chambers-chamber view in the cardiac ultrasound at end of the $cycle cycle of a $age-year-old $gender with $image_quality image quality.",
+    )
+)
+
 
 def get_single_json(
     default_prompt: str,
     raw_root: Path,
     image_index: int,
     image_mask_path: Tuple[Path, Path],
+    model,
 ):
     """Get the json for a single image-mask pair
 
@@ -165,6 +179,18 @@ def get_single_json(
     temp_sub_kwargs["image_quality"] = image_quality
     p6 = [temp.substitute(**temp_sub_kwargs) for temp in p6_templates]
 
+    with Image.open(mask_path) as mask, Image.open(image_path) as image:
+        # TODO: Incorporate later on
+        shape = get_answer(
+            model,
+            image,
+            mask,
+            question=f"What is the shape of the {label_name.lower()} enclosed in the green box?",
+        )
+
+    temp_sub_kwargs["shape"] = shape
+    p7 = [temp.substitute(**temp_sub_kwargs) for temp in p7_templates]
+
     bbox = mask_to_overall_bbox(str(mask_path))
 
     mask_name = mask_path.stem + f"_{label_index}" + mask_path.suffix
@@ -187,6 +213,7 @@ def get_single_json(
             "p4": p4,
             "p5": p5,
             "p6": p6,
+            "p7": p7,
         },
     }
 
@@ -270,38 +297,57 @@ def get_json_data(
 
     raw_root = Path("/mnt/Enterprise/PUBLIC_DATASETS/camus_database/training")
 
+    model = return_model()
+
     train_json = []
     val_json = []
     test_json = []
 
-    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-        futures_to_image_mask_path = {}
-        for i, image_mask_path in enumerate(image_mask_paths, 1):
-            future = executor.submit(
-                get_single_json, default_prompt, raw_root, i, image_mask_path
-            )
-            futures_to_image_mask_path[future] = image_mask_path
+    if max_workers is None or max_workers > 1:
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=max_workers
+        ) as executor:
+            futures_to_image_mask_path = {}
+            for i, image_mask_path in enumerate(image_mask_paths, 1):
+                future = executor.submit(
+                    get_single_json, default_prompt, raw_root, i, image_mask_path, model
+                )
+                futures_to_image_mask_path[future] = image_mask_path
 
-        for future in tqdm(
-            concurrent.futures.as_completed(futures_to_image_mask_path),
-            total=len(futures_to_image_mask_path),
+            for future in tqdm(
+                concurrent.futures.as_completed(futures_to_image_mask_path),
+                total=len(futures_to_image_mask_path),
+            ):
+                image_mask_path = futures_to_image_mask_path[future]
+
+                try:
+                    op = future.result()
+                except Exception as e:
+                    print(f"Image path: {image_mask_path}")
+                    print(f"Exception: {e}")
+                else:
+                    patient_id = get_patient_id_from_image_mask_path(image_mask_path)
+
+                    if patient_id in val_patient_ids:
+                        val_json.append(op)
+                    elif patient_id in test_patient_ids:
+                        test_json.append(op)
+                    else:  # for train data
+                        train_json.append(op)
+    else:
+        for i, image_mask_path in tqdm(
+            enumerate(image_mask_paths, 1), total=len(image_mask_paths)
         ):
-            image_mask_path = futures_to_image_mask_path[future]
+            op = get_single_json(default_prompt, raw_root, i, image_mask_path, model)
 
-            try:
-                op = future.result()
-            except Exception as e:
-                print(f"Image path: {image_mask_path}")
-                print(f"Exception: {e}")
-            else:
-                patient_id = get_patient_id_from_image_mask_path(image_mask_path)
+            patient_id = get_patient_id_from_image_mask_path(image_mask_path)
 
-                if patient_id in val_patient_ids:
-                    val_json.append(op)
-                elif patient_id in test_patient_ids:
-                    test_json.append(op)
-                else:  # for train data
-                    train_json.append(op)
+            if patient_id in val_patient_ids:
+                val_json.append(op)
+            elif patient_id in test_patient_ids:
+                test_json.append(op)
+            else:  # for train data
+                train_json.append(op)
 
     print("\n\nLengths", len(train_json), len(val_json), len(test_json))
 
