@@ -43,7 +43,16 @@ def get_metrics(
     return concat_df
 
 
-def main(config_path: Path, output_dir: Path, metric: str, save_fmt: str = "png"):
+def main(
+    config_path: Path,
+    output_dir: Path,
+    metric: str,
+    save_fmt: str,
+    show_yticks: bool,
+    yrange: Tuple[float, float],
+    legend_location: str,
+    x_label_size: int,
+):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     with open(config_path) as f:
@@ -75,6 +84,8 @@ def main(config_path: Path, output_dir: Path, metric: str, save_fmt: str = "png"
         ignore_index=True,
     )
 
+    concat_df["dice"] = concat_df["dice"] * 100
+
     metric_plot = sns.lineplot(
         data=concat_df,
         x="prompt_type",
@@ -82,9 +93,18 @@ def main(config_path: Path, output_dir: Path, metric: str, save_fmt: str = "png"
         hue="model_name",
         style="stage",
         markers=True,
+        legend="auto" if legend_location == "outside" else legend_location,
     )
 
-    metric_plot.legend(fontsize=6)
+    if legend_location == "outside":
+        metric_plot.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
+
+    metric_plot.set(ylim=yrange)
+    metric_plot.tick_params(axis="x", labelsize=x_label_size)
+
+    if not show_yticks:
+        metric_plot.set(yticks=[])
+        metric_plot.set(ylabel=None)
 
     models = "_".join(sorted(set(models)))
 
@@ -95,7 +115,7 @@ def main(config_path: Path, output_dir: Path, metric: str, save_fmt: str = "png"
 
 
 if __name__ == "__main__":
-    from argparse import ArgumentParser
+    from argparse import ArgumentParser, BooleanOptionalAction
 
     parser = ArgumentParser()
 
@@ -125,6 +145,34 @@ if __name__ == "__main__":
         type=str,
         default="png",
         help="The format to save the plots in. Must be one of png, pdf, svg",
+    )
+
+    parser.add_argument(
+        "--show-yticks",
+        action=BooleanOptionalAction,
+        help="Whether to show the yticks or not",
+    )
+
+    parser.add_argument(
+        "--yrange",
+        type=float,
+        nargs=2,
+        default=(0, 100),
+        help="The range of the y-axis",
+    )
+
+    parser.add_argument(
+        "--legend-location",
+        type=str,
+        default=None,
+        help="The location of the legend",
+    )
+
+    parser.add_argument(
+        "--x-label-size",
+        type=int,
+        default=10,
+        help="The size of the x-axis labels",
     )
 
     args = parser.parse_args()
