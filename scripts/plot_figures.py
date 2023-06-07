@@ -4,6 +4,7 @@ import pandas as pd
 
 import seaborn as sns
 from matplotlib.figure import Figure
+import matplotlib.pylab as plt
 
 from typing import List, Tuple, Union
 from glob import glob
@@ -83,7 +84,9 @@ def main(config_path: Path, output_dir: Path, metric: str, save_fmt: str = "png"
         markers=True,
     )
 
-    models = "_".join(set(models))
+    metric_plot.legend(fontsize=6)
+
+    models = "_".join(sorted(set(models)))
 
     fig_name = f"{config_path.stem}_{metric}_{models}"
 
