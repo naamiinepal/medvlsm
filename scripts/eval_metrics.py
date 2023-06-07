@@ -58,8 +58,8 @@ def compute_metrics(gt_img_path: str, pred_img_path: str):
     pred_img = torch.from_numpy(pred_img)[None, None, ...]
 
     # compute the metrics
-    #surface_dice = compute_surface_dice(pred_img, gt_img, class_thresholds=[0.5])
-    #hausdorff_distance = compute_hausdorff_distance(pred_img, gt_img)
+    # surface_dice = compute_surface_dice(pred_img, gt_img, class_thresholds=[0.5])
+    # hausdorff_distance = compute_hausdorff_distance(pred_img, gt_img)
     iou = compute_iou(pred_img, gt_img)
     dice = compute_dice(pred_img, gt_img, ignore_empty=False)
 
@@ -85,8 +85,8 @@ def main(
             ] = filename
 
         result_filenames = []
-        #surface_dice_list = []
-        #hausdorff_distance_list = []
+        # surface_dice_list = []
+        # hausdorff_distance_list = []
         iou_list = []
         dice_list = []
 
@@ -103,8 +103,8 @@ def main(
                     print(f"{filename} generated an exception: {exc}")
                 else:
                     result_filenames.append(filename)
-                    #surface_dice_list.append(surface_dice)
-                    #hausdorff_distance_list.append(hausdorff_distance)
+                    # surface_dice_list.append(surface_dice)
+                    # hausdorff_distance_list.append(hausdorff_distance)
                     iou_list.append(iou)
                     dice_list.append(dice)
 
@@ -140,15 +140,15 @@ def main(
     df = pd.DataFrame(
         {
             "filename": result_filenames,
-            #"surface_dice": surface_dice_list,
-            #"hausdorff_distance": hausdorff_distance_list,
+            # "surface_dice": surface_dice_list,
+            # "hausdorff_distance": hausdorff_distance_list,
             "iou": iou_list,
             "dice": dice_list,
         }
     )
 
-    #print_mean_std(df, "surface_dice")
-    #print_mean_std(df, "hausdorff_distance")
+    # print_mean_std(df, "surface_dice")
+    # print_mean_std(df, "hausdorff_distance")
     print_mean_std(df, "iou")
     print_mean_std(df, "dice")
 
@@ -161,10 +161,10 @@ def print_mean_std(df: pd.DataFrame, column_name: str):
     print(
         column_name.replace("_", " ").title(),
         "$",
-        (column.mean()*100).round(2),
+        (column.mean() * 100).round(2),
         "\smallStd{",
-        (column.std()*100).round(2),
-        "}$"
+        (column.std() * 100).round(2),
+        "}$",
     )
 
 
