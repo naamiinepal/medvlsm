@@ -60,7 +60,7 @@ def compute_metrics(gt_img_path: str, pred_img_path: str):
     # compute the metrics
     # surface_dice = compute_surface_dice(pred_img, gt_img, class_thresholds=[0.5]) * 100
     # hausdorff_distance = compute_hausdorff_distance(pred_img, gt_img) * 100
-    iou = compute_iou(pred_img, gt_img) * 100
+    iou = compute_iou(pred_img, gt_img, ignore_empty=False) * 100
     dice = compute_dice(pred_img, gt_img, ignore_empty=False) * 100
 
     all_ones_pred = torch.ones_like(pred_img)
@@ -88,11 +88,9 @@ def main(
 ):
     np.set_printoptions(precision=5)
 
-    result_filenames = tuple(seg_path.glob("*.png"))
-
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures = {}
-        for filename in result_filenames:
+        for filename in seg_path.glob("*.png"):
             gt_img_path = str(gt_path / filename.name)
             pred_img_path = str(seg_path / filename.name)
 
@@ -114,6 +112,7 @@ def main(
                 except Exception as exc:
                     print(f"{filename} generated an exception: {exc}")
                 else:
+                    aggregator["filename"].append(filename)
                     for key, value in results.items():
                         aggregator[key].append(value)
 
@@ -124,10 +123,10 @@ def main(
                     }
                 )
 
-    df = pd.DataFrame({"filename": result_filenames, **aggregator})
+    df = pd.DataFrame(aggregator)
 
     # print mean and std for each metric
-    for key in aggregator:
+    for key in df.columns:
         if key != "filename":
             print_mean_std(df, key)
 
