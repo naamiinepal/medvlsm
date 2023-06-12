@@ -23,9 +23,10 @@ Usage:
 """
 
 
-from argparse import ArgumentParser
-from typing import Optional, Union
-from pathlib import Path
+import concurrent.futures
+import os
+from argparse import ArgumentParser, Namespace
+
 import cv2
 import numpy as np
 import pandas as pd
@@ -37,7 +38,6 @@ from monai.metrics import (
     compute_surface_dice,
 )
 from tqdm import tqdm
-import concurrent.futures
 
 
 def compute_metrics(gt_img_path: str, pred_img_path: str):
@@ -54,59 +54,72 @@ def compute_metrics(gt_img_path: str, pred_img_path: str):
     pred_img[pred_img > 0] = 1
 
     # change images to batch-first tensor [B,C,H,W]
-    gt_img = torch.from_numpy(gt_img)[None, None, ...]
-    pred_img = torch.from_numpy(pred_img)[None, None, ...]
+    gt_img = torch.from_numpy(gt_img).unsqueeze(0).unsqueeze(0)
+    pred_img = torch.from_numpy(pred_img).unsqueeze(0).unsqueeze(0)
 
     # compute the metrics
-    # surface_dice = compute_surface_dice(pred_img, gt_img, class_thresholds=[0.5])
-    # hausdorff_distance = compute_hausdorff_distance(pred_img, gt_img)
+    surface_dice = compute_surface_dice(pred_img, gt_img, class_thresholds=[0.5])
+    hausdorff_distance = compute_hausdorff_distance(pred_img, gt_img)
     iou = compute_iou(pred_img, gt_img)
-    dice = compute_dice(pred_img, gt_img, ignore_empty=False)
+    dice = compute_dice(pred_img, gt_img)
+    all_white_dice = compute_dice(torch.from_numpy(np.ones(gt_img.shape)), gt_img)
+    dice_diff = all_white_dice.item() - dice.item()
 
-    return iou.item(), dice.item()
+    return (
+        surface_dice.item(),
+        hausdorff_distance.item(),
+        iou.item(),
+        dice.item(),
+        all_white_dice.item(),
+        dice_diff,
+    )
 
 
-def main(
-    seg_path: Path,
-    gt_path: Path,
-    csv_path: Union[str, Path],
-    max_workers: Optional[int],
-):
+def main(args: Namespace):
+    surface_dice_list = []
+    hausdorff_distance_list = []
+    iou_list = []
+    dice_list = []
+    all_white_dice_list = []
+    dice_diff_list = []
+
     np.set_printoptions(precision=4)
 
-    futures = {}
-    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-        for filename in seg_path.glob("*.png"):
-            gt_img_path = str(gt_path / filename.name)
-            pred_img_path = str(seg_path / filename.name)
+    filenames = tuple(x for x in os.listdir(args.seg_path) if x.endswith(".png"))
+
+    with concurrent.futures.ProcessPoolExecutor(
+        max_workers=args.max_workers
+    ) as executor:
+        futures = {}
+        for filename in filenames:
+            gt_img_path = os.path.join(args.gt_path, filename)
+            pred_img_path = os.path.join(args.seg_path, filename)
 
             futures[
                 executor.submit(compute_metrics, gt_img_path, pred_img_path)
             ] = filename
 
-        result_filenames = []
-        # surface_dice_list = []
-        # hausdorff_distance_list = []
-        iou_list = []
-        dice_list = []
-
-        with tqdm(
-            concurrent.futures.as_completed(futures),
-            total=len(futures),
-            desc="Evaluating metrics",
-        ) as pbar:
-            for future in pbar:
+        with tqdm(total=len(futures), desc="Evaluating metrics") as pbar:
+            for future in tqdm(concurrent.futures.as_completed(futures)):
                 filename = futures[future]
                 try:
-                    iou, dice = future.result()
+                    (
+                        surface_dice,
+                        hausdorff_distance,
+                        iou,
+                        dice,
+                        all_white_dice,
+                        dice_diff,
+                    ) = future.result()
                 except Exception as exc:
                     print(f"{filename} generated an exception: {exc}")
                 else:
-                    result_filenames.append(filename)
-                    # surface_dice_list.append(surface_dice)
-                    # hausdorff_distance_list.append(hausdorff_distance)
+                    surface_dice_list.append(surface_dice)
+                    hausdorff_distance_list.append(hausdorff_distance)
                     iou_list.append(iou)
                     dice_list.append(dice)
+                    all_white_dice_list.append(all_white_dice)
+                    dice_diff_list.append(dice_diff)
 
                 pbar.set_postfix(
                     {
@@ -117,8 +130,8 @@ def main(
 
     # with tqdm(filenames, desc="Evaluating metrics") as pbar:
     #     for filename in pbar:
-    #         gt_img_path = os.path.join(gt_path, filename)
-    #         pred_img_path = os.path.join(seg_path, filename)
+    #         gt_img_path = os.path.join(args.gt_path, filename)
+    #         pred_img_path = os.path.join(args.seg_path, filename)
 
     #         surface_dice, hausdorff_distance, iou, dice = compute_metrics(
     #             gt_img_path, pred_img_path
@@ -139,33 +152,30 @@ def main(
 
     df = pd.DataFrame(
         {
-            "filename": result_filenames,
-            # "surface_dice": surface_dice_list,
-            # "hausdorff_distance": hausdorff_distance_list,
+            "filename": filenames,
+            "surface_dice": surface_dice_list,
+            "hausdorff_distance": hausdorff_distance_list,
             "iou": iou_list,
             "dice": dice_list,
+            "all_white_dice": all_white_dice_list,
+            "dice_diff": dice_diff_list,
         }
     )
 
-    # print_mean_std(df, "surface_dice")
-    # print_mean_std(df, "hausdorff_distance")
-    print_mean_std(df, "iou")
-    print_mean_std(df, "dice")
+    print("Mean surface dice: ", np.mean(surface_dice_list))
+    print("Std surface dice: ", np.std(surface_dice_list))
 
-    df.to_csv(csv_path, index=False, float_format="%.4f")
-    print(f"Saved metrics to {csv_path}")
+    print("Mean hausdorff distance: ", np.mean(hausdorff_distance_list))
+    print("Std hausdorff distance: ", np.std(hausdorff_distance_list))
 
+    print("Mean iou: ", np.mean(iou_list))
+    print("Std iou: ", np.std(iou_list))
 
-def print_mean_std(df: pd.DataFrame, column_name: str):
-    column = df[column_name]
-    print(
-        column_name.replace("_", " ").title(),
-        "$",
-        (column.mean() * 100).round(2),
-        "\smallStd{",
-        (column.std() * 100).round(2),
-        "}$",
-    )
+    print("Mean dice: ", np.mean(dice_list))
+    print("Std dice: ", np.std(dice_list))
+
+    df.to_csv(args.csv_path, index=False, float_format="%.4f")
+    print(f"Saved metrics to {args.csv_path}")
 
 
 if __name__ == "__main__":
@@ -173,14 +183,14 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--seg_path",
-        type=Path,
-        default=Path("/mnt/Enterprise/safal/VLM-SEG-2023/testdata/pred"),
+        type=str,
+        default="/mnt/Enterprise/safal/VLM-SEG-2023/testdata/pred",
         help="path to segmentation files",
     )
     parser.add_argument(
         "--gt_path",
-        type=Path,
-        default=Path("/mnt/Enterprise/safal/VLM-SEG-2023/testdata/gt"),
+        type=str,
+        default="/mnt/Enterprise/safal/VLM-SEG-2023/testdata/gt",
         help="path to ground truth files",
     )
     parser.add_argument(
@@ -189,10 +199,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--max_workers",
         type=int,
-        default=None,
+        default=4,
         help="maximum number of workers to use for multiprocessing",
     )
 
     args = parser.parse_args()
-
-    main(**vars(args))
+    main(args)
