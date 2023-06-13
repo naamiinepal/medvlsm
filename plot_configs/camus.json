@@ -1,38 +1,38 @@
 [
-    {
-        "model_name": "CRIS",
-        "stage": "zero-shot",
-        "prompt_number": 8,
-        "csv_glob": "/mnt/Enterprise/rabin/VLM-SEG-2023/CRIS.pytorch/exp/camus_80_10_10_p?_i/CRIS_R50/metrics.csv"
-    },
-    {
-        "model_name": "CRIS",
-        "stage": "finetuning",
-        "prompt_number": 8,
-        "csv_glob": "/mnt/Enterprise/rabin/VLM-SEG-2023/CRIS.pytorch/exp/camus_80_10_10_p?_fn/CRIS_R50/metrics.csv"
-    },
-    {
-        "model_name": "CLIPSeg",
-        "stage": "finetuning",
-        "prompt_number": 8,
-        "csv_glob": "/home/manish/sedoc/biomedclip/lightning-hydra-starter/output_masks/clip_seg/full_train/camus/*.csv"
-    },
-    {
-        "model_name": "CLIPSeg",
-        "stage": "zero-shot",
-        "prompt_number": 8,
-        "csv_glob": "/home/manish/sedoc/biomedclip/lightning-hydra-starter/output_masks/clip_seg/zss/camus/*.csv"
-    },
-    {
-        "model_name": "BiomedCLIPSeg-D",
-        "stage": "finetuning",
-        "prompt_number": 8,
-        "csv_glob": "/home/manish/sedoc/biomedclip/lightning-hydra-starter/output_masks/biomed_clip_enc_clip_seg_dec/full_train/camus/*.csv"
-    },
-    {
-        "model_name": "BiomedCLIPSeg",
-        "stage": "finetuning",
-        "prompt_number": 8,
-        "csv_glob": "/home/manish/sedoc/biomedclip/lightning-hydra-starter/output_masks/biomed_clip_seg/full_train/camus/*.csv"
-    }
+        {
+                "model_name": "CRIS",
+                "stage": "zero-shot",
+                "prompt_number": 8,
+                "csv_glob": "/mnt/Enterprise/rabin/VLM-SEG-2023/CRIS.pytorch/exp/camus_80_10_10_p?_i/CRIS_R50/metrics.csv"
+        },
+        {
+                "model_name": "CRIS",
+                "stage": "finetuning",
+                "prompt_number": 8,
+                "csv_glob": "/mnt/Enterprise/rabin/VLM-SEG-2023/CRIS.pytorch/exp/camus_80_10_10_p?_fn/CRIS_R50/metrics.csv"
+        },
+        {
+                "model_name": "CLIPSeg",
+                "stage": "finetuning",
+                "prompt_number": 8,
+                "csv_glob": "/home/manish/sedoc/biomedclip/lightning-hydra-starter/output_masks/clip_seg/full_train/camus/*.csv"
+        },
+        {
+                "model_name": "CLIPSeg",
+                "stage": "zero-shot",
+                "prompt_number": 8,
+                "csv_glob": "/home/manish/sedoc/biomedclip/lightning-hydra-starter/output_masks/clip_seg/zss/camus/*.csv"
+        },
+        {
+                "model_name": "BiomedCLIPSeg-D",
+                "stage": "finetuning",
+                "prompt_number": 8,
+                "csv_glob": "/home/manish/sedoc/biomedclip/lightning-hydra-starter/output_masks/biomed_clip_enc_clip_seg_dec/full_train/camus/*.csv"
+        },
+        {
+                "model_name": "BiomedCLIPSeg",
+                "stage": "finetuning",
+                "prompt_number": 8,
+                "csv_glob": "/home/manish/sedoc/biomedclip/lightning-hydra-starter/output_masks/biomed_clip_seg/full_train/camus/*.csv"
+        }
 ]
