@@ -7,7 +7,7 @@ computes the following metrics:
 3. IoU
 4. Dice
 
-NOTE: The script assumes that the segmentation and ground truth images 
+NOTE: The script assumes that the segmentation and ground truth images
 have the same name. The script also assumes that the images are binary
 images with pixel values 0 and 255. The script thresholds the images to 0 and 1
 and computes the metrics. The script also assumes that the images are of size
@@ -23,21 +23,21 @@ Usage:
 """
 
 
+import concurrent.futures
 from argparse import ArgumentParser
-from typing import Optional, Union
+from collections import defaultdict
 from pathlib import Path
+from typing import Optional, Union
+
 import cv2
 import numpy as np
 import pandas as pd
 import torch
-from monai.metrics import (
+from monai.metrics import (  # compute_hausdorff_distance,; compute_surface_dice,
     compute_dice,
-    compute_hausdorff_distance,
     compute_iou,
-    compute_surface_dice,
 )
 from tqdm import tqdm
-import concurrent.futures
 
 
 def compute_metrics(gt_img_path: str, pred_img_path: str):
@@ -58,12 +58,26 @@ def compute_metrics(gt_img_path: str, pred_img_path: str):
     pred_img = torch.from_numpy(pred_img)[None, None, ...]
 
     # compute the metrics
-    # surface_dice = compute_surface_dice(pred_img, gt_img, class_thresholds=[0.5])
-    # hausdorff_distance = compute_hausdorff_distance(pred_img, gt_img)
-    iou = compute_iou(pred_img, gt_img)
-    dice = compute_dice(pred_img, gt_img, ignore_empty=False)
+    # surface_dice = compute_surface_dice(pred_img, gt_img, class_thresholds=[0.5]) * 100
+    # hausdorff_distance = compute_hausdorff_distance(pred_img, gt_img) * 100
+    iou = compute_iou(pred_img, gt_img) * 100
+    dice = compute_dice(pred_img, gt_img, ignore_empty=False) * 100
 
-    return iou.item(), dice.item()
+    all_ones_pred = torch.ones_like(pred_img)
+    all_ones_dice = compute_dice(all_ones_pred, gt_img, ignore_empty=False) * 100
+    ones_dice_diff = dice - all_ones_dice
+
+    all_zeros_dice = torch.zeros_like(pred_img)
+    all_zeros_dice = compute_dice(all_zeros_dice, gt_img, ignore_empty=False) * 100
+
+    zeros_dice_diff = dice - all_zeros_dice
+
+    return {
+        "iou": iou.item(),
+        "dice": dice.item(),
+        "ones_dice_diff": ones_dice_diff.item(),
+        "zeros_dice_diff": zeros_dice_diff.item(),
+    }
 
 
 def main(
@@ -72,11 +86,13 @@ def main(
     csv_path: Union[str, Path],
     max_workers: Optional[int],
 ):
-    np.set_printoptions(precision=4)
+    np.set_printoptions(precision=5)
 
-    futures = {}
+    result_filenames = tuple(seg_path.glob("*.png"))
+
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-        for filename in seg_path.glob("*.png"):
+        futures = {}
+        for filename in result_filenames:
             gt_img_path = str(gt_path / filename.name)
             pred_img_path = str(seg_path / filename.name)
 
@@ -84,11 +100,7 @@ def main(
                 executor.submit(compute_metrics, gt_img_path, pred_img_path)
             ] = filename
 
-        result_filenames = []
-        # surface_dice_list = []
-        # hausdorff_distance_list = []
-        iou_list = []
-        dice_list = []
+        aggregator = defaultdict(list)
 
         with tqdm(
             concurrent.futures.as_completed(futures),
@@ -98,59 +110,26 @@ def main(
             for future in pbar:
                 filename = futures[future]
                 try:
-                    iou, dice = future.result()
+                    results = future.result()
                 except Exception as exc:
                     print(f"{filename} generated an exception: {exc}")
                 else:
-                    result_filenames.append(filename)
-                    # surface_dice_list.append(surface_dice)
-                    # hausdorff_distance_list.append(hausdorff_distance)
-                    iou_list.append(iou)
-                    dice_list.append(dice)
+                    for key, value in results.items():
+                        aggregator[key].append(value)
 
                 pbar.set_postfix(
                     {
-                        "Mean Dice": np.mean(dice_list),
-                        "Mean IoU": np.mean(iou_list),
+                        "Mean Dice": np.mean(aggregator["dice"]),
+                        "Mean IoU": np.mean(aggregator["iou"]),
                     }
                 )
 
-    # with tqdm(filenames, desc="Evaluating metrics") as pbar:
-    #     for filename in pbar:
-    #         gt_img_path = os.path.join(gt_path, filename)
-    #         pred_img_path = os.path.join(seg_path, filename)
+    df = pd.DataFrame({"filename": result_filenames, **aggregator})
 
-    #         surface_dice, hausdorff_distance, iou, dice = compute_metrics(
-    #             gt_img_path, pred_img_path
-    #         )
-
-    #         surface_dice_list.append(surface_dice)
-    #         hausdorff_distance_list.append(hausdorff_distance)
-    #         iou_list.append(iou)
-    #         dice_list.append(dice)
-
-    #         pbar.set_postfix(
-    #             {
-    #                 "file": filename,
-    #                 "Mean Dice": np.mean(dice_list),
-    #                 "Mean IoU": np.mean(iou_list),
-    #             }
-    #         )
-
-    df = pd.DataFrame(
-        {
-            "filename": result_filenames,
-            # "surface_dice": surface_dice_list,
-            # "hausdorff_distance": hausdorff_distance_list,
-            "iou": iou_list,
-            "dice": dice_list,
-        }
-    )
-
-    # print_mean_std(df, "surface_dice")
-    # print_mean_std(df, "hausdorff_distance")
-    print_mean_std(df, "iou")
-    print_mean_std(df, "dice")
+    # print mean and std for each metric
+    for key in aggregator:
+        if key != "filename":
+            print_mean_std(df, key)
 
     df.to_csv(csv_path, index=False, float_format="%.4f")
     print(f"Saved metrics to {csv_path}")
@@ -161,9 +140,9 @@ def print_mean_std(df: pd.DataFrame, column_name: str):
     print(
         column_name.replace("_", " ").title(),
         "$",
-        (column.mean() * 100).round(2),
+        column.mean().round(2),
         "\smallStd{",
-        (column.std() * 100).round(2),
+        column.std().round(2),
         "}$",
     )
 
