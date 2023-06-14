@@ -31,12 +31,6 @@
     },
     {
         "model_name": "BiomedCLIPSeg-D",
-        "stage": "zero-shot",
-        "prompt_number": 7,
-        "csv_glob": "/mnt/Enterprise/HDD2/safal/VLM-SEG-2023/VL-Seg/output_masks/biomed_clip_enc_clip_seg_dec/zss/chexlocalize/*.csv"
-    },
-    {
-        "model_name": "BiomedCLIPSeg-D",
         "stage": "finetuning",
         "prompt_number": 7,
         "csv_glob": "/mnt/Enterprise/HDD2/safal/VLM-SEG-2023/VL-Seg/output_masks/biomed_clip_enc_clip_seg_dec/full_train/chexlocalize/*.csv"

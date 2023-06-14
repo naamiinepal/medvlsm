@@ -1,0 +1,38 @@
+[
+    {
+        "model_name": "CRIS",
+        "stage": "zero-shot",
+        "prompt_number": 10,
+        "csv_glob": "/mnt/Enterprise/kanchan/VLM-SEG-2023/CRIS.pytorch/exp/dfu-2022_80_10_10_0_?/CRIS_R50/metrics.csv"
+    },
+    {
+        "model_name": "CRIS",
+        "stage": "finetuning",
+        "prompt_number": 10,
+        "csv_glob": "/mnt/Enterprise/kanchan/VLM-SEG-2023/CRIS.pytorch/exp/dfu-2022_80_10_10_0_?_fn_cv_dfuc-2022/CRIS_R50/metrics.csv"
+    },
+    {
+        "model_name": "CLIPSeg",
+        "stage": "zero-shot",
+        "prompt_number": 10,
+        "csv_glob": "/mnt/Enterprise/manish/models/biomedclip_seg/output_masks/clip_seg/zss/dfu/*.csv"
+    },
+    {
+        "model_name": "CLIPSeg",
+        "stage": "finetuning",
+        "prompt_number": 10,
+        "csv_glob": "/mnt/Enterprise/manish/models/biomedclip_seg/output_masks/clip_seg/full_train/dfu/*.csv"
+    },
+    {
+        "model_name": "BiomedCLIPSeg",
+        "stage": "finetuning",
+        "prompt_number": 10,
+        "csv_glob": "/mnt/Enterprise/manish/models/biomedclip_seg/output_masks/biomed_clip_seg/full_train/dfu/*.csv"
+    },
+    {
+        "model_name": "BiomedCLIPSeg-D",
+        "stage": "finetuning",
+        "prompt_number": 10,
+        "csv_glob": "/mnt/Enterprise/manish/models/biomedclip_seg/output_masks/biomed_clip_enc_clip_seg_dec/full_train/dfu/*.csv"
+    }
+]
