@@ -130,6 +130,9 @@ def main(
         if key != "filename":
             print_mean_std(df, key)
 
+    # sort the dataframe by filename to make output consistent
+    df.sort_values(by="filename", inplace=True)
+
     df.to_csv(csv_path, index=False, float_format="%.4f")
     print(f"Saved metrics to {csv_path}")
 
