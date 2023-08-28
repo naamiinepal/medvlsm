@@ -49,7 +49,7 @@ For more reference, refer `./CRIS.pytorch/tools/prepare_datasets.md`.
 - [ETIS](https://github.com/DengPingFan/PraNet)(Navigate to section 3.1.2)
 - [ISIC-2016](https://challenge.isic-archive.com/data/)
 - [DFU-2022](http://www2.docm.mmu.ac.uk/STAFF/M.Yap/dataset.php)
-- [CAMUS]()
+- [CAMUS](https://humanheart-project.creatis.insa-lyon.fr/database/#collection/6373703d73e9f0047faa1bc8)
 - [BUSI](https://www.kaggle.com/datasets/aryashah2k/breast-ultrasound-images-dataset)
-- [CheXlocalize]()
+- [CheXlocalize](https://github.com/rajpurkarlab/cheXlocalize#download)
 
