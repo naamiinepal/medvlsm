@@ -233,7 +233,7 @@ torchaudio==0.13.1
 torchio==0.18.92
 torchmetrics==0.10.0
 torchvision==0.15.1
-tornado==6.2
+tornado==6.3.3
 tqdm==4.65.0
 traitlets==5.9.0
 transformers==4.27.4
