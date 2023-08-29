@@ -1,3 +1,4 @@
+CRIS is a referring image segmentation model architecture. The model is originally trained on refcoco, refcoco+ and G-ref dataset. We have adapted the CRIS' official implentation from [here](https://github.com/DerrickWang005/CRIS.pytorch) to finetune and evaluate model for medical image segmentation.
 ## **SCRIPTS TO RUN CRIS**
 
 1. Get this repository in your system.
