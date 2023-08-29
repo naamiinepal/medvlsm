@@ -17,13 +17,15 @@ def get_metrics(
     prompts: Union[List[str], Tuple[str]],
     model_name: str,
     stage: str,
+    metric: str,
 ):
     metric_files = glob(glob_pattern)
     print(metric_files)
 
-    assert len(metric_files) == len(
-        prompts
-    ), f"The number of prompts: {len(prompts)} and csv files: {len(metric_files)} should be equal"
+    assert len(metric_files) == len(prompts), (
+        f"The number of prompts: {len(prompts)} and csv files: {len(metric_files)} should be equal. "
+        f"Please check the glob pattern: {glob_pattern} and the number of prompts in the config file"
+    )
 
     metric_files.sort()
 
@@ -40,6 +42,9 @@ def get_metrics(
     concat_df["model_name"] = model_name
     concat_df["stage"] = stage
 
+    if concat_df[metric].max() < 1:
+        concat_df[metric] *= 100
+
     return concat_df
 
 
@@ -51,7 +56,7 @@ def main(
     show_yticks: bool,
     yrange: Tuple[float, float],
     legend_location: str,
-    x_label_size: int,
+    font_scale: float,
 ):
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -78,13 +83,17 @@ def main(
 
     concat_df = pd.concat(
         [
-            get_metrics(*args)
+            get_metrics(*args, metric)
             for args in zip(glob_patterns, prompts_collection, models, stages)
         ],
         ignore_index=True,
     )
 
-    concat_df["dice"] = concat_df["dice"] * 100
+    assert len(concat_df) > 0, "No dataframes were created"
+
+    # concat_df["dice"] = concat_df["dice"] * 100
+
+    sns.set_theme(font_scale=font_scale, style="whitegrid")
 
     metric_plot = sns.lineplot(
         data=concat_df,
@@ -99,19 +108,23 @@ def main(
     if legend_location == "outside":
         metric_plot.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
 
-    metric_plot.set(ylim=yrange)
-    metric_plot.tick_params(axis="x", labelsize=x_label_size)
+    metric_plot.set(ylim=yrange, xlabel=None)
 
-    if not show_yticks:
-        metric_plot.set(yticks=[])
+    if show_yticks:
+        metric_plot.set(ylabel=f"{metric.title()} (%)")
+    else:
         metric_plot.set(ylabel=None)
+        metric_plot.tick_params(axis="y", colors="white")
 
     models = "_".join(sorted(set(models)))
 
     fig_name = f"{config_path.stem}_{metric}_{models}"
 
     fig: Figure = metric_plot.get_figure()
-    fig.savefig(output_dir / f"{fig_name}.{save_fmt}", bbox_inches="tight")
+
+    fig.savefig(
+        output_dir / f"{fig_name}.{save_fmt}", bbox_inches="tight", pad_inches=0.05
+    )
 
 
 if __name__ == "__main__":
@@ -169,10 +182,10 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--x-label-size",
-        type=int,
-        default=10,
-        help="The size of the x-axis labels",
+        "--font_scale",
+        type=float,
+        default=1.0,
+        help="The scale of the fonts in the figure",
     )
 
     args = parser.parse_args()
