@@ -60,7 +60,7 @@ data/
     └── masks/
 ```
 Each dataset folder (`bkai_polyp`, `busi`, `camus`, etc.) contains three sub-directories: `anns`, `images`, and `masks`. The anns directory contains prompt files (`testA.json`, `train.json`, `val.json`), while `images` and `masks` hold input images and target masks respectively.
-For more details see `./CRIS.pytorch/blob/master/tools/prepare_datasets.md`.
+For more details see the [prepare_datasets](prepare_datasets.md) file.
 
 ### **RUNNING CRIS**
 
@@ -131,7 +131,8 @@ This script will start the fine-tuning process, which is essential for customizi
 - [BUSI](https://www.kaggle.com/datasets/aryashah2k/breast-ultrasound-images-dataset)
 	- This dataset can be downloaded directly from the given link.
 - [CheXlocalize](https://github.com/rajpurkarlab/cheXlocalize#download)
-	- This dataset can be downloaded by following the instructions from the given link.
+	- Follow the instructions in the **Download Data** section.
+	- The dataset contains mask information in JSON files. Follow the instructions in the [Generate segmentations from human annotations](https://github.com/rajpurkarlab/cheXlocalize#generate-segmentations-from-human-annotations) section to generate the segmentation masks.
 
 ## License
 	Details will be added soon.
