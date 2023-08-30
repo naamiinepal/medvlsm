@@ -58,18 +58,18 @@ mask_index = [
 
 p0 = ""
 
-p1_template = convert_str_to_template("Chest Xray, segment $labels")
+p1_template = convert_str_to_template("$labels in a Chest Xray.")
 
 p2_template = convert_str_to_template(
-    "Chest Xray, $xray_view view, segment $labels",
+    "$labels in the $xray_view view of a Chest Xray.",
 )
 
 p3_template = convert_str_to_template(
-    "Chest Xray, $xray_view view, segment $labels, of shape $shape"
+    "$labels of shape $shape in the $xray_view view of a Chest Xray."
 )
 
 p4_template = convert_str_to_template(
-    "Chest Xray, $xray_view view, segment $labels, of shape $shape, and located in $location of the image"
+    "$labels of shape $shape, and located in $location of the $xray_view view of a Chest Xray."
 )
 
 
