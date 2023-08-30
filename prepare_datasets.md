@@ -34,6 +34,9 @@ Follow the instructions in this file to prepare the datasets.
 
 ### 2. Prepare the data splits JSON (containing prompts)
 
+**We've released all the data splits and the generated prompts for all 11 datasets inside the [datasets/anns](datasets/anns) folder. 🥳🥳**
+> P.S. This section is only for the curious child in you. Skip this.
+
 For all the datasets (except ISIC and CAMUS), we prepared the data splits (train-val-test) as these splits were not available in the original dataset.
 
   For all the datasets, structure the downloaded datasets such that the `images` and `masks` directories are inside the same folder. 
