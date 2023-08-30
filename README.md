@@ -1,14 +1,11 @@
 # Exploring Transfer Learning in Medical Image Segmentation using Vision-Language Models
 
-CRIS is a referring image segmentation model architecture. The model is originally trained on refcoco, refcoco+ and G-ref dataset. We have adapted the CRIS' official implentation from [here](https://github.com/DerrickWang005/CRIS.pytorch) to finetune and evaluate model for medical image segmentation.
-
 ## Table of contents
 - [Installation](#installation)
 - [Usage](#usage)
 	- [Dataset prepration](#dataset-preparation)
-	- [CRIS](#runnning-cris)
+	- [CRIS](#running-cris)
 	- [CLIPSeg](#running-clipseg)
-- [Datasets used](#datasets-used-in-our-experiments)
 - [License](#license)
 - [Citation](#citation)
 
@@ -37,102 +34,183 @@ pip install -r requirements.txt
 # Usage
 
 ### Dataset Preparation
-Before running any experiments, you need to ensure that the provided dataset is correctly placed within the `data` folder at the root of the project. The directory structure of the `data` folder should look like this:
-```
-data/
-│
-├── bkai_polyp/
-│   ├── anns/
-│   │   ├── testA.json
-│   │   ├── train.json
-│   │   └── val.json
-│   ├── images/
-│   └── masks/
-│
-├── [other dataset folders...]
-│
-└── kvasir_polyp/
-    ├── anns/
-    │   ├── testA.json
-    │   ├── train.json
-    │   └── val.json
-    ├── images/
-    └── masks/
-```
-Each dataset folder (`bkai_polyp`, `busi`, `camus`, etc.) contains three sub-directories: `anns`, `images`, and `masks`. The anns directory contains prompt files (`testA.json`, `train.json`, `val.json`), while `images` and `masks` hold input images and target masks respectively.
-For more details see the [prepare_datasets](prepare_datasets.md) file.
+Before running any experiments, you must ensure the provided dataset is correctly placed in the folders.
+See the [prepare_datasets.md](prepare_datasets.md) file for more details.
 
-### **RUNNING CRIS**
+### **Running CRIS**
 
-1. Get this repository in your system.
+- Download pretrained models 
+	- Download the CLIP model from [here](https://openaipublic.azureedge.net/clip/models/afeb0e10f9e5a86da6080e35cf09123aca3b358a0c3e3b6c78a7b63bc04b6762/RN50.pt).
+	- Download the pretrained CRIS model from [here](https://github.com/DerrickWang005/CRIS.pytorch/issues/3#issuecomment-1290130778).
+	  As the authors have not released the official CRIS model, this is an unofficial pretrained model trained on the Refcoco dataset, using the standard training procedure described in the CRIS paper.
 
-2. Dataset preparation:
-First of all download the required datasets using the referecnes given in the paper. Some of the datasets may require requesting permissions so please follow accordingly.
-After downloading dataset, prepare dataset in Ref-COCO format.
-Annotations format used in our experiments is slightly different than original annotation format.
-For reference format used in our experiment refer sample at `./CRIS.pytorch/datasets/anns/kvasir_polyp_80_10_10/train.json`(also see `val.json`, `testA.json` and `testB.json`).
-In the key `prompts` of each of the annotation, there should be key value pair of prompts of each type (`P0, P1, ..., Pn` for `n` types of prompts).
-For the case where a list of multiple prompts is given as a value of key `prompt`, one prompt is randomly sampled and sent during training.
+   Place both of these models inside the `pretrained` directory.
+  
 
-3. Prepare LMDB
-    Use the scipt `./CRIS.pytorch/prepare_datasets_all.sh`, by editing necessary paths.
-For more reference, refer `./CRIS.pytorch/tools/prepare_datasets.md`.
+- The config files for all the datasets are present inside the `CRIS.pytorch/configs` folder. 
 
-4. Edit path arguments and prompt type in config
-    Data: Paths to fill are commented
-    Train: Change the following args 
-        output_folder
-        prompt_type
+	Example config file.
+	```yaml
+	DATA:
+	  dataset: <dataset_name>
+	  train_lmdb: <path_to_train_lmdb>
+	  train_split: train
+	  val_lmdb: <path_to_val_lmdb>
+	  val_split: val
+	  mask_root: <path_to_mask>
+	TRAIN:
+	  # Base Arch
+	  clip_pretrain: pretrain/RN50.pt
+	  input_size: 416
+	  word_len: 77
+	  word_dim: 1024
+	  vis_dim: 512
+	  fpn_in: [512, 1024, 1024]
+	  fpn_out: [256, 512, 1024]
+	  sync_bn: True
+	  # Decoder
+	  num_layers: 3
+	  num_head: 8
+	  dim_ffn: 2048
+	  dropout: 0.2
+	  intermediate: False
+	  # Training Setting
+	  workers: 16 # data loader workers
+	  workers_val: 16
+	  epochs: 100
+	  milestones: [100]
+	  start_epoch: 0
+	  batch_size: 16  # batch size for training
+	  batch_size_val: 16 # batch size for validation during training, memory and speed tradeoff
+	  base_lr: 0.0001
+	  lr_decay: 0.1
+	  lr_multi: 0.1
+	  weight_decay: 0.01
+	  max_norm: 0.
+	  manual_seed: 0
+	  print_freq: 1
+	  prompt_type: p0 # this is the prompt name to use from the json file
+	  log_model: False
+	  resize: False 
+	  # Resume & Save
+	  exp_name: CRIS_R50 
+	  output_folder: <output_folder> # The models are saved in this folder
+	  save_freq: 1
+	  weight:  # path to initial weight (default: none)
+	  resume: <path_to_trained_cris_model> # path to latest checkpoint (default: none)
+	  resume_optimizer: True #restores optimizer state while loading checkpoint
+	  resume_scheduler: True #restores scheduler state while loading checkpoint
+	  evaluate: True  # evaluate on the validation set, extra gpu memory needed and small batch_size_val is recommend
+	  train_clip: True # whether to train the clip encoder
+	Distributed:
+	  dist_url: tcp://localhost:6745
+	  dist_backend: 'nccl'
+	  multiprocessing_distributed: True
+	  world_size: 1
+	  rank: 0
+	TEST:
+	  test_split: <test_split_name>
+	  test_lmdb: <path_to_test_lmdb>
+	  visualize: True
+	```
+- Create/change the config files for individual datasets.
 
-5. Run scripts
-    a. For inference
-    Use the script ./CRIS.pytorch/test.sh as sample and edit necessary paths.
-    b. For finetunning
-    Use the script ./CRIS.pytorch/finetune.sh as sample and edit necessary paths.
+- Edit path arguments and prompt type in config
+
+  - Data: Paths to fill are commented
+  
+  - Train: Change the following args 
+	- output_folder
+	- prompt_type
+- In the `CRIS.pytorch/utils/dataset.py` file, add the dataset information inside the `info` dictionary as:
+  ```json
+	"dataset_name": {"train": 1330, "val": 420, "testA": 427, "testB": 427}
+  ```
+  The values of `train`, `val`, and `testA/testB` in this dictionary is the number of images in the respective splits.
+  The `dataset_name` key is the same as `DATA.dataset_name` in the config file.
+  
+  **NOTE: Without adding this split information inside the dataset.py, the training/testing code does not work.**
+  
+  
+- Run scripts
+    - For inference
+    	Use the script `./CRIS.pytorch/test.sh` as a sample and edit the necessary paths.
+
+  	This script uses the `test.py` file for inference.
+  	For zero-shot inference, use `TRAIN.resume: pretrain/cris_best.pth` in the config file.
+  	This is the downloaded pretrained CRIS model.
+    - For fine-tuning
+    	Use the script `./CRIS.pytorch/finetune.sh` as a sample and edit the necessary paths.
 
 ### **Running CLIPSeg**
 
-### Zero Shot Segmentation
+CLIPSeg uses the pretrained models [available on HuggingFace](https://huggingface.co/docs/transformers/model_doc/clipseg).
+No need to download the models 🥳.
 
-To perform zero-shot segmentation, you can use the provided script. Open a terminal and navigate to the project directory, then execute the following command:
-```bash
-bash ./VL-SEG/scripts/zss.sh
+- Prepare configs for the datasets.
+
+  The configs for the datasets are inside the `VL-Seg/configs/datamodule` folder.
+  Each config file is named as `img_mask_dataset-name.yaml`.
+
+  Example config file:
+```yaml
+_target_: src.datamodules.BaseDataModule
+train_dataset:
+  _target_: src.datamodules.datasets.ImageMaskDataset
+  images_dir: <img_dir_path>
+  masks_dir: <mask_dir_path>
+  caps_file: <train_json_file>
+  img_size: ${img_size}
+  transforms: ${train_img_transforms}
+  
+
+val_dataset:
+  _target_: src.datamodules.datasets.ImageMaskDataset
+  images_dir: <img_dir_path>
+  masks_dir: <mask_dir_path>
+  caps_file: <val_json_file>
+  img_size: ${img_size}
+  transforms: ${val_img_transforms}
+
+test_dataset:
+  _target_: src.datamodules.datasets.ImageMaskDataset
+  images_dir: <img_dir_path>
+  masks_dir: <mask_dir_path>
+  caps_file: <test_json_file>
+  img_size: ${img_size}
+  transforms: ${test_img_transforms}
+
+batch_size: 16
+train_val_split: [0.8, 0.2]
+num_workers: 4
+pin_memory: True
 ```
-This script will initiate the zero-shot segmentation process and produce the desired results.
 
-### Fine-Tuning
+- Add the `dataset_name` and `prompt_types` in the `VL-Seg/scripts/configs.sh` file after adding the config file for a particular dataset.
 
-If you need to run fine-tuning for your model, you can do so using the following script:
-```bash
-bash ./VL-SEG/scripts/finetune.sh
-```
-This script will start the fine-tuning process, which is essential for customizing the model for specific tasks.
+- Zero Shot Segmentation
 
-## Dataset used in our experiments
-##### (Some of the datasets may requires requesting permissions to get access to the datasets)
-- [Kvasir-SEG](https://datasets.simula.no/kvasir-seg/)
-	- This dataset can be downloaded directly from the given link by navigating to the download section.
-- [ClinicDB](https://www.kaggle.com/datasets/balraj98/cvcclinicdb)
-	- This dataset can be downloaded directly from the given link.
-- [BKAI](https://www.kaggle.com/datasets/magiccard/bkai-igh)
-	- This dataset can be downloaded directly from the given link.
-- [CVC-300](https://github.com/DengPingFan/PraNet)
-	- This dataset can be downloaded directly from the given link by navigating to the section 3.1.2 of README file(link to download the zip file is available). 
-- [CVC-ColonDB](https://github.com/DengPingFan/PraNet)
-	- This dataset can be downloaded directly from the given link by navigating to the section 3.1.2 of README file(link to download the zip file is available). 
-- [ETIS](https://github.com/DengPingFan/PraNet)
-	- This dataset can be downloaded directly from the given link by navigating to the section 3.1.2 of README file(link to download the zip file is available). 
-- [ISIC-2016](https://challenge.isic-archive.com/data/)
-	- This dataset can be downloaded directly from the given link.
-- [DFU-2022](http://www2.docm.mmu.ac.uk/STAFF/M.Yap/dataset.php)
-	- This dataset can be downloaded by filling the form whose link is available in the license agreement which can be found on the `Diabetic Foot Ulcers Datasets` section of the table present in the `Datasets/Software` section of the given link.
-- [CAMUS](https://humanheart-project.creatis.insa-lyon.fr/database/#collection/6373703d73e9f0047faa1bc8)
-	- This dataset can be downloaded directly from the given link by logging in to the site. 
-- [BUSI](https://www.kaggle.com/datasets/aryashah2k/breast-ultrasound-images-dataset)
-	- This dataset can be downloaded directly from the given link.
-- [CheXlocalize](https://github.com/rajpurkarlab/cheXlocalize#download)
-	- Follow the instructions in the **Download Data** section.
-	- The dataset contains mask information in JSON files. Follow the instructions in the [Generate segmentations from human annotations](https://github.com/rajpurkarlab/cheXlocalize#generate-segmentations-from-human-annotations) section to generate the segmentation masks.
+	To perform zero-shot segmentation, you can use the provided script. 
+	
+	Navigate to the `scripts` directory in the `VL-Seg` folder.
+	  ```bash
+	  cd VL-Seg/scripts
+	  ```
+	
+	Open a terminal and navigate to the project directory, then execute the following command:
+	```bash
+	bash zss.sh
+	```
+	This script will initiate the zero-shot segmentation process and produce the desired results.
+
+- Fine-Tuning
+
+	If you need to run fine-tuning for your model, you can do so using the following script:
+	```bash
+	bash finetune.sh
+	```
+	This script will start the fine-tuning process, essential for customizing the model for specific tasks.
+
 
 ## License
 	Details will be added soon.
