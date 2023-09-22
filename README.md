@@ -236,7 +236,13 @@ pin_memory: True
 
 
 ## License
-	Details will be added soon.
+All Python source code (including `.py` and `.ipynb` files) is made available
+under the MIT license.
+You can freely use and modify the code, without warranty, so long as you provide attribution to the authors.
+See [LICENSE](LICENSE) for the full license text.
+
+The manuscript text (including all LaTeX files), figures, and data/models produced as part of this research are available under the [Creative Commons Attribution 4.0 License (CC-BY)](https://creativecommons.org/licenses/by/4.0/).
+See [LICENSE](datasets/anns/LICENSE) for the full license text.
 ## Citation
 ```
 @article{poudel2023exploring,
