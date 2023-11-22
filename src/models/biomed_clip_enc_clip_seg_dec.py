@@ -16,7 +16,7 @@ class BiomedCLIPEncCLIPSegDec(nn.Module):
         self,
         biomedclip_hf_api: str,
         clip_seg_hf_api: str,
-        freeze_clip=True,
+        freeze_encoder=True,
         freeze_decoder=True,
         rand_init_decoder=False,
     ):
