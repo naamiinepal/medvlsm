@@ -1,0 +1,89 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=test
+
+#######################
+# Override defaults   #
+#######################
+
+defaults:
+  - override /datamodule: ???
+  - override /model: biomed_clip_enc_clip_seg_dec.yaml
+  - override /callbacks: default.yaml
+  - override /trainer: default.yaml
+  - override /logger: wandb.yaml
+  - override /extras: default.yaml
+
+experiment_name: ??? # experiment name for logging and checkpointing
+
+# Randomly initialized model's decoder to be trained from scratch
+model:
+  net:
+    rand_init_decoder: true
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+trainer:
+  min_epochs: 10
+  max_epochs: 1000
+  gradient_clip_val: 0.5
+  accelerator: gpu
+  devices: [0]
+  precision: 16-mixed
+
+
+logger:
+  wandb:
+    project: medvlsm
+    tags: ${tags}
+
+
+
+############################
+# Additional parameters    #
+############################
+
+# Default prompts for each models
+img_size: 224 # 224 or 352
+tokenizer_type: biomedclip # clipseg or biomedclip
+context_length: 256 # 77 for clipseg, 256 for biomedclip
+tags: [BiomedCLIp_Enc, CLIPSeg_Dec]
+seed: 42
+
+img_mean: [0.48145466, 0.4578275, 0.40821073]
+img_std: [0.26862954, 0.26130258, 0.27577711]
+# Image pre-processing configs
+train_img_transforms: 
+  _target_: albumentations.Compose
+  transforms:
+    - _target_: albumentations.Resize
+      height: ${img_size}
+      width: ${img_size}
+    - _target_: albumentations.Normalize
+      mean: ${img_mean}
+      std: ${img_std}
+    - _target_: albumentations.pytorch.ToTensorV2
+
+val_img_transforms:
+  _target_: albumentations.Compose
+  transforms:
+    - _target_: albumentations.Resize
+      height: ${img_size}
+      width: ${img_size}
+    - _target_: albumentations.Normalize
+      mean: ${img_mean}
+      std: ${img_std}
+    - _target_: albumentations.pytorch.ToTensorV2
+
+test_img_transforms:
+  _target_: albumentations.Compose
+  transforms:
+    - _target_: albumentations.Resize
+      height: ${img_size}
+      width: ${img_size}
+    - _target_: albumentations.Normalize
+      mean: ${img_mean}
+      std: ${img_std}
+    - _target_: albumentations.pytorch.ToTensorV2

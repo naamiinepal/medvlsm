@@ -1,0 +1,87 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=test
+
+#######################
+# Override defaults   #
+#######################
+
+defaults:
+  - override /datamodule: ???
+  - override /model: unetpp.yaml
+  - override /callbacks: default.yaml
+  - override /trainer: default.yaml
+  - override /logger: wandb.yaml
+  - override /extras: default.yaml
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+experiment_name: ??? # experiment name for logging and checkpointing
+
+trainer:
+  min_epochs: 10
+  max_epochs: 1000
+  gradient_clip_val: 0.5
+  accelerator: gpu
+  devices: [0]
+  precision: 16-mixed
+
+logger:
+  wandb:
+    project: medvlsm
+    tags: ${tags}
+    name: ${experiment_name}
+
+
+############################
+# Additional parameters    #
+############################
+
+# Default prompts for each models
+img_size: 256 # 352 or 224
+tokenizer_type: null # clip_seg or biomedclip
+context_length: null # 77 for clip_seg, 256 for biomedclip
+prompt_type: null
+tags: [ UNetPP ]
+seed: 42
+
+img_mean: [0.485, 0.456, 0.406]
+img_std: [0.229, 0.224, 0.225]
+
+# Image pre-processing configs
+train_img_transforms: 
+  _target_: albumentations.Compose
+  transforms:
+    - _target_: albumentations.Resize
+      height: ${img_size}
+      width: ${img_size}
+    - _target_: albumentations.Normalize
+      mean: ${img_mean}
+      std: ${img_std}
+    - _target_: albumentations.pytorch.ToTensorV2
+
+val_img_transforms:
+  _target_: albumentations.Compose
+  transforms:
+    - _target_: albumentations.Resize
+      height: ${img_size}
+      width: ${img_size}
+    - _target_: albumentations.Normalize
+      mean: ${img_mean}
+      std: ${img_std}
+    - _target_: albumentations.pytorch.ToTensorV2
+
+test_img_transforms:
+  _target_: albumentations.Compose
+  transforms:
+    - _target_: albumentations.Resize
+      height: ${img_size}
+      width: ${img_size}
+    - _target_: albumentations.Normalize
+      mean: ${img_mean}
+      std: ${img_std}
+    - _target_: albumentations.pytorch.ToTensorV2
+
+

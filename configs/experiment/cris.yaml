@@ -1,0 +1,85 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=test
+
+#######################
+# Override defaults   #
+#######################
+
+defaults:
+  - override /datamodule: ???
+  - override /model: cris.yaml
+  - override /callbacks: default.yaml
+  - override /trainer: default.yaml
+  - override /logger: wandb.yaml
+  - override /extras: default.yaml
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+experiment_name: ??? # experiment name for logging and checkpointing
+
+model:
+  net:
+    freeze_encoder: false
+
+trainer:
+  min_epochs: 10
+  max_epochs: 1000
+  gradient_clip_val: 0.5
+  accelerator: gpu
+  devices: [0]
+  precision: 16-mixed
+
+logger:
+  wandb:
+    project: medvlsm
+    name: ${experiment_name}
+    tags: ${tags}
+
+
+############################
+# Additional parameters    #
+############################
+
+# Default prompts for each models
+img_size: [416, 416] # 352 for clipseg or 224 for biomedclipseg, or 416 for cris
+tokenizer_type: clipseg # clipseg or biomedclip
+context_length: 77 # 77 for clip_based, 256 for biomedclip
+tags: [ CRIS ]
+seed: 42
+
+img_mean: [0.48145466, 0.4578275, 0.40821073]
+img_std: [0.26862954, 0.26130258, 0.27577711]
+
+
+img_transforms:
+  _target_: torchvision.transforms.Compose
+  transforms:
+    - _target_: torchvision.transforms.Resize
+      size: ${img_size}
+    - _target_: torchvision.transforms.ToTensor
+    - _target_: torchvision.transforms.Normalize
+      mean: ${img_mean}
+      std: ${img_std}
+
+mask_transforms:
+  _target_: torchvision.transforms.Compose
+  transforms:
+    - _target_: torchvision.transforms.Resize
+      size: ${img_size}
+      interpolation: 0 # for nearest exact of pillow constant
+    - _target_: torchvision.transforms.ToTensor
+
+# Image pre-processing configs
+train_img_transforms: ${img_transforms}
+train_mask_transforms: ${mask_transforms}
+
+val_img_transforms: ${img_transforms}
+val_mask_transforms: ${mask_transforms}
+
+test_img_transforms: ${img_transforms}
+test_mask_transforms: ${mask_transforms}
+
+

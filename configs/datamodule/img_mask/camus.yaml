@@ -1,0 +1,32 @@
+_target_: src.datamodules.BaseDataModule
+train_dataset:
+  _target_: src.datamodules.datasets.ImageMaskDataset
+  images_dir: ${data_root}/camus/images/train
+  masks_dir: ${data_root}/camus/masks//train
+  caps_file: ${data_root}/camus/anns/train.json
+  class_name: ${class_name}
+  img_size: ${img_size}
+  transforms: ${train_img_transforms}
+  
+
+val_dataset:
+  _target_: src.datamodules.datasets.ImageMaskDataset
+  images_dir: ${data_root}/camus/images/train
+  masks_dir: ${data_root}/camus/masks/train
+  caps_file: ${data_root}/camus/anns/val.json
+  class_name: ${class_name}
+  img_size: ${img_size}
+  transforms: ${val_img_transforms}
+
+test_dataset:
+  _target_: src.datamodules.datasets.ImageMaskDataset
+  images_dir: ${data_root}/camus/images/test
+  masks_dir: ${data_root}/camus/masks/test
+  caps_file: ${data_root}/camus/anns/test.json
+  class_name: ${class_name}
+  img_size: ${img_size}
+  transforms: ${test_img_transforms}
+
+batch_size: 16
+num_workers: 4
+pin_memory: True

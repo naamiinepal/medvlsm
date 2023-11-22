@@ -1,0 +1,19 @@
+_target_: src.models.BaseModule
+net:
+  _target_: src.models.CLIPSeg
+  clipseg_hf_api: ${extras.clipseg_hf_api}
+
+loss_fn: 
+  _target_: monai.losses.DiceCELoss
+  lambda_dice: 1.0
+  lambda_ce: 0.2
+optimizer:
+  _target_: torch.optim.AdamW
+  _partial_: true
+  lr: 2.0e-4
+  weight_decay: 0.001
+scheduler:
+  _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+  _partial_: true
+  factor: 0.1
+  patience: 5

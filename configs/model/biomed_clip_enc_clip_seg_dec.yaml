@@ -1,0 +1,23 @@
+_target_: src.models.BaseModule
+net:
+  _target_: src.models.BiomedCLIPEncCLIPSegDec
+  biomedclip_hf_api: ${extras.biomedclip_hf_api}
+  clip_seg_hf_api: ${extras.clip_seg_hf_api}
+  freeze_clip: true
+  freeze_decoder: false
+  rand_init_decoder: false
+
+loss_fn: 
+  _target_: monai.losses.DiceCELoss
+  lambda_dice: 1.0
+  lambda_ce: 0.2
+optimizer:
+  _target_: torch.optim.AdamW
+  _partial_: true
+  lr: 1.0e-3
+  weight_decay: 0.001
+scheduler:
+  _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+  _partial_: true
+  factor: 0.5
+  patience: 5

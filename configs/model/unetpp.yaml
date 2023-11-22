@@ -1,0 +1,16 @@
+_target_: src.models.BaseModule
+net:
+  _target_: src.models.UNetPP
+  encoder_name: resnet50
+  encoder_weights: imagenet
+  in_channels: 3
+  classes: 1
+multi_class: false
+log_output_masks: true
+
+loss_fn:
+  _target_: src.losses.TunedDiceLoss
+optimizer:
+  _target_: torch.optim.Adam
+  _partial_: true
+  lr: 1.0e-3

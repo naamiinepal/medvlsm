@@ -1,0 +1,197 @@
+_target_: src.datamodules.BaseDataModule
+train_dataset:
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: train
+    dataset_name: kvasir_polyp
+    img_size: ${img_size}
+    # transforms: ${train_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: train
+    dataset_name: clinicdb_polyp
+    img_size: ${img_size}
+    # transforms: ${train_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: train
+    dataset_name: bkai_polyp
+    img_size: ${img_size}
+    # transforms: ${train_img_transforms}
+  
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: train
+    dataset_name: isic
+    img_size: ${img_size}
+    # transforms: ${train_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: train
+    dataset_name: dfu
+    img_size: ${img_size}
+    # transforms: ${train_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: train
+    dataset_name: camus
+    img_size: ${img_size}
+    # transforms: ${train_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: train
+    dataset_name: busi
+    img_size: ${img_size}
+    # transforms: ${train_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: train
+    dataset_name: chexlocalize
+    img_size: ${img_size}
+    # transforms: ${train_img_transforms}
+
+val_dataset:
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: val
+    dataset_name: kvasir_polyp
+    img_size: ${img_size}
+    # transforms: ${val_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: val
+    dataset_name: clinicdb_polyp
+    img_size: ${img_size}
+    # transforms: ${val_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: val
+    dataset_name: bkai_polyp
+    img_size: ${img_size}
+    # transforms: ${val_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: val
+    dataset_name: isic
+    img_size: ${img_size}
+    # transforms: ${val_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: val
+    dataset_name: dfu
+    img_size: ${img_size}
+    # transforms: ${val_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: val
+    dataset_name: camus
+    img_size: ${img_size}
+    # transforms: ${val_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: val
+    dataset_name: busi
+    img_size: ${img_size}
+    # transforms: ${val_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: val
+    dataset_name: chexlocalize
+    img_size: ${img_size}
+    # transforms: ${val_img_transforms}
+
+test_dataset:
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: test
+    dataset_name: kvasir_polyp
+    img_size: ${img_size}
+    # transforms: ${test_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: test
+    dataset_name: clinicdb_polyp
+    img_size: ${img_size}
+    # transforms: ${test_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: test
+    dataset_name: bkai_polyp
+    img_size: ${img_size}
+    # transforms: ${test_img_transforms}
+  
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: test
+    dataset_name: cvc300_polyp
+    img_size: ${img_size}
+    # transforms: ${test_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: test
+    dataset_name: cvc_colondb_polyp
+    img_size: ${img_size}
+    # transforms: ${test_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: test
+    dataset_name: etis_polyp
+    img_size: ${img_size}
+    # transforms: ${test_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: test
+    dataset_name: isic
+    img_size: ${img_size}
+    # transforms: ${test_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: test
+    dataset_name: dfu
+    img_size: ${img_size}
+    # transforms: ${test_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: test
+    dataset_name: camus
+    img_size: ${img_size}
+    # transforms: ${test_img_transforms}
+
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: test
+    dataset_name: busi
+    img_size: ${img_size}
+    # transforms: ${test_img_transforms}
+  
+  - _target_: src.datamodules.datasets.ImageMaskMixedDataset
+    dataset_dir: ${data_root}/combined_datasets/
+    split: test
+    dataset_name: chexlocalize
+    img_size: ${img_size}
+    # transforms: ${test_img_transforms}
+
+batch_size: 16
+train_val_split: [0.8, 0.2]
+num_workers: 4
+pin_memory: True

@@ -1,1 +1,0 @@
-python get_dice.py --predictions_path /mnt/Enterprise/miccai_2023_CRIS/CRIS.pytorch/exp/kvasir_polyp/CRIS_R50/predictions_renamed/ --labels_path /mnt/Enterprise/miccai_2023_CRIS/CRIS.pytorch/exp/kvasir_polyp/CRIS_R50/labels_renamed/ --file_type png --csv_path /mnt/Enterprise/miccai_2023_CRIS/CRIS.pytorch/exp/kvasir_polyp/CRIS_R50/dice_scores.csv
