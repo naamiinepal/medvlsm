@@ -22,7 +22,7 @@ experiment_name: ??? # experiment name for logging and checkpointing
 
 model:
   net:
-    freeze_clip: false
+    freeze_encoder: false
     freeze_decoder: false
 
 trainer:

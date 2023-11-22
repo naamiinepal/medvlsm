@@ -36,7 +36,7 @@ class BiomedCLIPEncCLIPSegDec(nn.Module):
                 clip_seg_hf_api
             ).decoder
 
-        if freeze_clip:
+        if freeze_encoder:
             for p in self.biomedclip.parameters():
                 p.requires_grad = False
 

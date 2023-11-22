@@ -2,6 +2,8 @@ _target_: src.models.BaseModule
 net:
   _target_: src.models.CLIPSeg
   clipseg_hf_api: ${extras.clipseg_hf_api}
+  freeze_encoder: false
+  freeze_decoder: false
 
 loss_fn: 
   _target_: monai.losses.DiceCELoss

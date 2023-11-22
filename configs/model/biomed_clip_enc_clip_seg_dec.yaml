@@ -3,7 +3,7 @@ net:
   _target_: src.models.BiomedCLIPEncCLIPSegDec
   biomedclip_hf_api: ${extras.biomedclip_hf_api}
   clip_seg_hf_api: ${extras.clip_seg_hf_api}
-  freeze_clip: true
+  freeze_encoder: true
   freeze_decoder: false
   rand_init_decoder: false
 
