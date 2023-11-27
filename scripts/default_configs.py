@@ -11,6 +11,7 @@ freeze_encoder = False
 
 models_configs = {
     "clipseg": {"batch_size": 128, "lr": 0.002},
+    "biomedclipseg": {"batch_size": 128, "lr": 0.002},
     "cris": {"batch_size": 32, "lr": 0.00002},
 }
 non_rad_prompts = [f"p{i}" for i in range(10)]

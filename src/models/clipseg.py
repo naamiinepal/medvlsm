@@ -17,7 +17,6 @@ class CLIPSeg(nn.Module):
         self.clipseg.decoder.requires_grad_(not freeze_decoder)
 
     def forward(self, **kwargs):
-        B, C, H, W = kwargs["pixel_values"].shape
 
         outputs = self.clipseg(**kwargs)
-        return outputs.logits.view(B, 1, H, W)
+        return outputs.logits[:, None]

@@ -47,25 +47,25 @@ dataset_prompts = {
 
 
 # CUSTOM CONFIG -- start:
-devices=[1]
+# devices=[1]
 dataset_prompts = {
     # "kvasir_polyp": non_rad_prompts,
     # "bkai_polyp": non_rad_prompts,
     # "clinicdb_polyp": non_rad_prompts,
-    "cvc300_polyp": non_rad_prompts,
-    "colondb_polyp": non_rad_prompts,
-    "etis_polyp": non_rad_prompts,
+    # "cvc300_polyp": non_rad_prompts,
+    # "colondb_polyp": non_rad_prompts,
+    # "etis_polyp": non_rad_prompts,
     # "isic": non_rad_prompts,
     # "dfu": non_rad_prompts,
-    # "camus": camus_prompts,
+    "camus": camus_prompts,
     # "busi": busi_prompts,
-    # "chexlocalize": chexlocalze_prompts,
+    "chexlocalize": chexlocalze_prompts,
     # "pooled_all": ["random"]
 }
 
 models = [
-    # "clipseg",
-    "cris",
+    "clipseg",
+    # "cris",
     # "biomedclipseg",
     # "biomedclipseg_d"
 ]
@@ -84,14 +84,15 @@ for model in models:
             # ckpt_path = f"logs/train/runs/${experiment_name}/checkpoints/best.ckpt"
             command = f"python src/eval.py \
                 experiment={model}.yaml \
-                experiment_name={model}_zss_{dataset}_{p}\
+                experiment_name={model}_zss_{dataset}_{p} \
                 datamodule=img_txt_mask/{dataset}.yaml \
                 prompt_type={p} \
                 datamodule.batch_size={batch_size} \
                 output_masks_dir=output_masks/{model}/zss/{dataset}/{p}\
                 trainer.accelerator={accelerator} \
                 trainer.devices={devices} \
-                use_ckpt=false"
+                use_ckpt=false \
+                logger=csv.yaml"
             
             # Log command in terminal
             print(command)

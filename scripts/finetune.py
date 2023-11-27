@@ -24,9 +24,9 @@ dataset_prompts = {
 }
 
 models = [
-    "clipseg",
-    "cris",
-    # "biomedclipseg",
+    # "clipseg",
+    # "cris",
+    "biomedclipseg",
     # "biomedclipseg_d"
 ]
 freeze_encoder = True
@@ -43,17 +43,15 @@ for model in models:
         for p in prompts:
             command = f"python src/train.py \
                 experiment={model}.yaml \
-                experiment_name={model}_ft_only_dec_{dataset}_{p} \
+                experiment_name={model}_train_only_dec_{dataset}_{p} \
                 datamodule=img_txt_mask/{dataset}.yaml \
                 datamodule.batch_size={batch_size} \
                 model.optimizer.lr={lr} \
-                model.net.freeze_encoder={freeze_encoder} \
                 trainer.accelerator={accelerator} \
                 trainer.precision={precision} \
                 trainer.devices={devices} \
                 prompt_type={p} \
-                tags='[{model}, {dataset}, finetune_only_dec, {p}]' \
-                output_masks_dir=output_masks/{model}/ft_only_dec/{dataset}/{p}"
+                tags='[{model}, {dataset}, train_only_dec, {p}]'"
 
             if debugger:
                 command = f"{command} debug=default"

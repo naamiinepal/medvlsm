@@ -9,7 +9,7 @@
 
 defaults:
   - override /datamodule: ???
-  - override /model: biomed_clip_enc_clip_seg_dec.yaml
+  - override /model: biomedclipseg.yaml
   - override /callbacks: default.yaml
   - override /trainer: default.yaml
   - override /logger: wandb.yaml
@@ -17,13 +17,9 @@ defaults:
 
 experiment_name: ??? # experiment name for logging and checkpointing
 
-# Randomly initialized model's decoder to be trained from scratch
-model:
-  net:
-    rand_init_decoder: true
-
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
+
 
 trainer:
   min_epochs: 10
@@ -38,52 +34,51 @@ logger:
   wandb:
     project: medvlsm
     tags: ${tags}
-
+    name: ${experiment_name}
 
 
 ############################
 # Additional parameters    #
 ############################
 
-# Default prompts for each models
-img_size: 224 # 224 or 352
+#####
+# Default prompts for each models, adapted from BiomedCLIP model: 
+# https://huggingface.co/microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224
+#####
+
+img_size: [224, 224] # 224 for Biomedclipseg
 tokenizer_type: biomedclip # clipseg or biomedclip
 context_length: 256 # 77 for clipseg, 256 for biomedclip
-tags: [BiomedCLIp_Enc, CLIPSeg_Dec]
+tags: [BiomedCLIPSeg]
 seed: 42
 
 img_mean: [0.48145466, 0.4578275, 0.40821073]
 img_std: [0.26862954, 0.26130258, 0.27577711]
+
+img_transforms:
+  _target_: torchvision.transforms.Compose
+  transforms:
+    - _target_: torchvision.transforms.Resize
+      size: ${img_size}
+    - _target_: torchvision.transforms.ToTensor
+    - _target_: torchvision.transforms.Normalize
+      mean: ${img_mean}
+      std: ${img_std}
+
+mask_transforms:
+  _target_: torchvision.transforms.Compose
+  transforms:
+    - _target_: torchvision.transforms.Resize
+      size: ${img_size}
+      interpolation: 0 # for nearest exact of pillow constant
+    - _target_: torchvision.transforms.ToTensor
+
 # Image pre-processing configs
-train_img_transforms: 
-  _target_: albumentations.Compose
-  transforms:
-    - _target_: albumentations.Resize
-      height: ${img_size}
-      width: ${img_size}
-    - _target_: albumentations.Normalize
-      mean: ${img_mean}
-      std: ${img_std}
-    - _target_: albumentations.pytorch.ToTensorV2
+train_img_transforms: ${img_transforms}
+train_mask_transforms: ${mask_transforms}
 
-val_img_transforms:
-  _target_: albumentations.Compose
-  transforms:
-    - _target_: albumentations.Resize
-      height: ${img_size}
-      width: ${img_size}
-    - _target_: albumentations.Normalize
-      mean: ${img_mean}
-      std: ${img_std}
-    - _target_: albumentations.pytorch.ToTensorV2
+val_img_transforms: ${img_transforms}
+val_mask_transforms: ${mask_transforms}
 
-test_img_transforms:
-  _target_: albumentations.Compose
-  transforms:
-    - _target_: albumentations.Resize
-      height: ${img_size}
-      width: ${img_size}
-    - _target_: albumentations.Normalize
-      mean: ${img_mean}
-      std: ${img_std}
-    - _target_: albumentations.pytorch.ToTensorV2
+test_img_transforms: ${img_transforms}
+test_mask_transforms: ${mask_transforms}

@@ -1,17 +1,20 @@
 import math
-from typing import List
+from typing import List, Optional
 
 import open_clip
 import torch
 from open_clip.hf_model import ClsPooler
 from torch import nn
+from transformers.models.clipseg.modeling_clipseg import CLIPSegDecoder
+from transformers import CLIPSegConfig
+from torchvision.transforms.functional import resize
 
 
 class BiomedCLIPSeg(nn.Module):
     def __init__(
         self,
-        extract_layers: List[int] = [4, 7, 10, 12],
-        cond_layers: List[int] = [12],
+        extract_layers: List[int] = [3, 6, 9],
+        cond_layer: int = 0,
         biomedclip_hf_api: str = "hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224",
         reduce_dim: int = 64,
         n_heads: int = 4,
@@ -26,69 +29,33 @@ class BiomedCLIPSeg(nn.Module):
         self.mask_size = mask_size
         self.text_supervision = text_supervision
 
-        self.biomedclip_model = open_clip.create_model(biomedclip_hf_api)
-
+        self.biomedclip_model, _ = open_clip.create_model_from_pretrained(biomedclip_hf_api)
+        # self.biomedclip_model.
         for p in self.biomedclip_model.parameters():
             p.requires_grad = False
 
-        # Projections to aggregate the text embeddings
-        self.film_mul = nn.ModuleList([nn.Linear(768, reduce_dim) for _ in cond_layers])
-        self.film_add = nn.ModuleList([nn.Linear(768, reduce_dim) for _ in cond_layers])
+        self.clipseg_config = CLIPSegConfig()
 
-        # Decoder parts
-        self.extract_layers = extract_layers
-        self.cond_layers = cond_layers
-        self.reduce_dim = reduce_dim
-        self.reducers = nn.ModuleList(
-            [nn.Linear(768, reduce_dim) for _ in extract_layers]
-        )
-        self.blocks = nn.ModuleList(
-            [
-                nn.TransformerEncoderLayer(
-                    d_model=reduce_dim, nhead=n_heads, batch_first=True
-                )
-                for _ in extract_layers
-            ]
-        )
-        self.extra_blocks = nn.ModuleList(
-            [
-                nn.TransformerEncoderLayer(
-                    d_model=reduce_dim, nhead=n_heads, batch_first=True
-                )
-                for _ in range(extra_blocks)
-            ]
-        )
-
-        # Projection to generate the binary mask
-        self.conv_trans = nn.ConvTranspose2d(reduce_dim, 1, 16, 16)
+        self.decoder = CLIPSegDecoder(self.clipseg_config)
 
     def _forward_vit(self, x: torch.TensorType, output_hidden_states: bool = True):
         ViT = self.biomedclip_model.visual.trunk
         x = ViT.patch_embed(x)
         x = ViT._pos_embed(x)
+        x = ViT.patch_drop(x)
         x = ViT.norm_pre(x)
 
-        if 0 in self.extract_layers:
-            hidden_states = [x]
-        else:
-            hidden_states = []
+        if output_hidden_states:
+            hidden_states = (x,)
 
         for i, block in enumerate(ViT.blocks):
             x = block(x)
-
-            if i + 1 in self.extract_layers:
-                hidden_states.append(x)
+            if output_hidden_states:
+                hidden_states += (x,)
 
         x = ViT.norm(x)
 
-        if ViT.global_pool:
-            x = (
-                x[:, ViT.num_prefix_tokens :].mean(dim=1)
-                if ViT.global_pool == "avg"
-                else x[:, 0]
-            )
-        x = ViT.fc_norm(x)
-        x = ViT.head(x)
+        x = ViT.forward_head(x)
 
         # Linear Projection: 768 -> 512
         x = self.biomedclip_model.visual.head(x)
@@ -128,43 +95,22 @@ class BiomedCLIPSeg(nn.Module):
         else:
             return projected
 
-    def forward(self, images: torch.TensorType, texts: torch.TensorType):
-        images_embeds, vit_hidden_states = self._forward_vit(images)
-        texts_embeds, bert_hidden_states = self._forward_bert(texts)
-        vit_hidden_states = vit_hidden_states[::-1]
-        bert_hidden_states = bert_hidden_states[::-1]
+    def forward(
+        self, pixel_values: torch.TensorType, input_ids: torch.TensorType, **kwargs
+    ):
+        texts_embeds = self.biomedclip_model.text(input_ids)
+        images_embeds, vit_hidden_states = self._forward_vit(pixel_values)
 
-        a = None
-        for i, (activation, block, reducer) in enumerate(
-            zip(vit_hidden_states[1:], self.blocks, self.reducers)
-        ):
-            if a is not None:
-                a = reducer(activation) + a
-            else:
-                a = reducer(activation)
+        # we add +1 here as the hidden states also include the initial embeddings
+        activations = [
+            vit_hidden_states[i + 1] for i in self.clipseg_config.extract_layers
+        ]
 
-            if i == 0 and self.text_supervision:
-                for _mul, _add, hidden_state in zip(
-                    self.film_mul, self.film_add, bert_hidden_states
-                ):
-                    pooled_state = hidden_state[:, 0]
-                    a = _mul(pooled_state)[:, None].repeat(1, 197, 1) * a + _add(
-                        pooled_state
-                    )[:, None].repeat(1, 197, 1)
+        decoder_outputs = self.decoder(activations, texts_embeds)
+        logits = decoder_outputs[0]
 
-            a = block(a)
-
-        for block in self.extra_blocks:
-            a = a + block(a)
-
-        # Discard the CLS token and (*, tokens, features) -> (*, features, tokens)
-        a = a[:, 1:].permute(0, 2, 1)
-
-        size = int(math.sqrt(a.shape[2]))
-
-        a = a.view(-1, a.shape[1], size, size)
-
-        a = self.conv_trans(a)
+        # Resize logits to the size of GT masks
+        logits = resize(logits, [self.mask_size, self.mask_size])
 
         # Return mask logits
-        return a
+        return logits[:, None]
