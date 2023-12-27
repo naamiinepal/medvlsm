@@ -29,7 +29,9 @@ class BiomedCLIPSeg(nn.Module):
         self.mask_size = mask_size
         self.text_supervision = text_supervision
 
-        self.biomedclip_model, _ = open_clip.create_model_from_pretrained(biomedclip_hf_api)
+        self.biomedclip_model, _ = open_clip.create_model_from_pretrained(
+            biomedclip_hf_api
+        )
         # self.biomedclip_model.
         for p in self.biomedclip_model.parameters():
             p.requires_grad = False
@@ -108,9 +110,12 @@ class BiomedCLIPSeg(nn.Module):
 
         decoder_outputs = self.decoder(activations, texts_embeds)
         logits = decoder_outputs[0]
-
+        if logits.ndim == 3:
+            logits = logits[:, None]
+        elif logits.ndim == 2:
+            logits = logits[None, None]
         # Resize logits to the size of GT masks
         logits = resize(logits, [self.mask_size, self.mask_size])
 
         # Return mask logits
-        return logits[:, None]
+        return logits

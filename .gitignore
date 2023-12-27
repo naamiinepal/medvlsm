@@ -162,6 +162,8 @@ output_masks/
 output_masks*
 asmus_out_masks/
 
+# ZS-Ref config output
+output
 
 # Evaluation code
 evaluate

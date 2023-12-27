@@ -148,7 +148,6 @@ class ImageTextMaskDataset(Dataset):
 
         image = self.img_transforms(image)
         mask = self.mask_transforms(mask)[:1] # ToTensor Gives 3-channeled mask
-
         text_enc = self.tokenizer(
             text=prompt,
             max_length=self.context_length,
@@ -167,4 +166,5 @@ class ImageTextMaskDataset(Dataset):
             mask_name=cap["mask_name"],
             height=h,
             width=w,
+            sentence=prompt
         )

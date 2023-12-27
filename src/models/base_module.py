@@ -64,10 +64,10 @@ class BaseModule(LightningModule):
 
     def step(self, batch: _mapping_str_any) -> _mapping_str_any:
         masks, mask_names, heights, widths = (
-            batch.pop("mask"),
-            batch.pop("mask_name"),
-            batch.pop("height"),
-            batch.pop("width"),
+            batch["mask"],
+            batch["mask_name"],
+            batch["height"],
+            batch["width"],
         )
         dataset = None
         if "dataset" in batch:
@@ -165,7 +165,7 @@ class BaseModule(LightningModule):
             batch_idx == 0
             and isinstance(self.logger, WandbLogger)
             and self.hparams.log_output_masks
-        )  :
+        ):
             # Only Log 16 images at max
             max_images_logs = 16
             if len(targets) < max_images_logs:

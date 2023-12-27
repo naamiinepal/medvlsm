@@ -233,9 +233,9 @@ test_dataset:
   - _target_: src.datamodules.datasets.ImageTextMaskDataset
     tokenizer_type: ${tokenizer_type}
     prompt_type: ${prompt_type}
-    images_dir: ${data_root}/cvc_colondb_polyp/images
-    masks_dir: ${data_root}/cvc_colondb_polyp/masks
-    caps_file: ${data_root}/cvc_colondb_polyp/anns/test.json
+    images_dir: ${data_root}/colondb_polyp/images
+    masks_dir: ${data_root}/colondb_polyp/masks
+    caps_file: ${data_root}/colondb_polyp/anns/test.json
     img_size: ${img_size}
     context_length: ${context_length}
     img_transforms: ${test_img_transforms}
@@ -266,9 +266,9 @@ test_dataset:
   - _target_: src.datamodules.datasets.ImageTextMaskDataset
     tokenizer_type: ${tokenizer_type}
     prompt_type: ${prompt_type}
-    images_dir: ${data_root}/cvc_colondb_polyp/images
-    masks_dir: ${data_root}/cvc_colondb_polyp/masks
-    caps_file: ${data_root}/cvc_colondb_polyp/anns/train.json
+    images_dir: ${data_root}/colondb_polyp/images
+    masks_dir: ${data_root}/colondb_polyp/masks
+    caps_file: ${data_root}/colondb_polyp/anns/train.json
     img_size: ${img_size}
     context_length: ${context_length}
     img_transforms: ${test_img_transforms}

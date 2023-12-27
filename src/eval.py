@@ -1,4 +1,5 @@
 import pyrootutils
+import copy
 
 root = pyrootutils.setup_root(
     search_from=__file__,
@@ -100,16 +101,19 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
     if cfg.get("task_name") == "eval":
         # Logs eval metrics for testing pipeline
         log.info("Starting testing!")
-        trainer.test(model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path)
+        trainer.test(
+            model=model,
+            datamodule=datamodule,
+            ckpt_path=cfg.ckpt_path,
+        )
 
         # Writes output masks to files
         if cfg.get("output_masks_dir"):
             output_masks_dir = cfg.get("output_masks_dir")
-
             log.info("Generating masks of test dataset")
-            pred_outputs = trainer.predict(
+            pred_outputs = predict(
                 model=model,
-                dataloaders=datamodule.test_dataloader(),
+                dataloaders=datamodule,
                 ckpt_path=cfg.ckpt_path,
             )
 
@@ -133,7 +137,7 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
                 # for f in os.listdir(output_masks_dir):
                 #     os.remove(os.path.join(output_masks_dir, f))
                 pass
-            
+
             if preds[0].shape[0] > 1 and len(datasets) > 0:
                 for pred, mask_name, h, w, dataset in zip(
                     preds, mask_names, heights, widths, datasets
@@ -171,7 +175,7 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
             log.info(f"Generating masks of test dataset")
             pred_outputs = trainer.predict(
                 model=model,
-                dataloaders=datamodule.test_dataloader(),
+                dataloaders=datamodule,
                 ckpt_path=cfg.ckpt_path,
             )
 
