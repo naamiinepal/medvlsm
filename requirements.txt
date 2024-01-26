@@ -44,7 +44,7 @@ en-core-web-lg @ https://github.com/explosion/spacy-models/releases/download/en_
 exceptiongroup==1.1.1
 executing==1.2.0
 filelock==3.11.0
-fonttools==4.39.3
+fonttools==4.43.0
 frozenlist==1.3.3
 fsspec==2023.10.0
 ftfy==6.1.1
