@@ -137,7 +137,7 @@ pathtools==0.1.2
 pbr==5.11.1
 pexpect==4.8.0
 pickleshare==0.7.5
-Pillow==9.5.0
+Pillow==10.2.0
 platformdirs==3.2.0
 pluggy==1.0.0
 portalocker==2.8.2
