@@ -37,7 +37,7 @@ class BaseModule(LightningModule):
         loss_fn: Callable[[torch.Tensor, torch.Tensor, bool], torch.Tensor],
         optimizer: torch.optim.Optimizer,
         scheduler: Optional[torch.optim.lr_scheduler.LRScheduler] = None,
-        scheduler_monitor: str = "val_loss",
+        scheduler_monitor: str = "val/loss",
         threshold: float = 0.5,
         multi_class: bool = False,
         log_output_masks: bool = True,
@@ -132,9 +132,9 @@ class BaseModule(LightningModule):
             step_out["iou"],
         )
 
-        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
-        self.log("train_dice", dice.mean(), on_step=True, on_epoch=True, prog_bar=True)
-        self.log("train_iou", iou.mean(), on_step=True, on_epoch=True, prog_bar=True)
+        self.log("train/loss", loss, on_step=True, on_epoch=True, prog_bar=True)
+        self.log("train/dice", dice.mean(), on_step=True, on_epoch=True, prog_bar=True)
+        self.log("train/iou", iou.mean(), on_step=True, on_epoch=True, prog_bar=True)
 
         # we can return here dict with any tensors
         # and then read it in some callback or in `training_epoch_end()` below
@@ -173,21 +173,21 @@ class BaseModule(LightningModule):
                 max_images_logs = len(targets)
 
             self.logger.log_image(
-                key="val_image", images=list(images.float())[:max_images_logs]
+                key="val/image", images=list(images.float())[:max_images_logs]
             )
             self.logger.log_image(
-                key="val_target_mask", images=list(targets.float())[:max_images_logs]
+                key="val/target_mask", images=list(targets.float())[:max_images_logs]
             )
             self.logger.log_image(
-                key="val_pred_mask",
+                key="val/pred_mask",
                 images=list(((preds > self.hparams.threshold) * 1).float())[
                     :max_images_logs
                 ],
             )
 
-        self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
-        self.log("val_dice", dice.mean(), on_step=True, on_epoch=True, prog_bar=True)
-        self.log("val_iou", iou.mean(), on_step=True, on_epoch=True, prog_bar=True)
+        self.log("val/loss", loss, on_step=True, on_epoch=True, prog_bar=True)
+        self.log("val/dice", dice.mean(), on_step=True, on_epoch=True, prog_bar=True)
+        self.log("val/iou", iou.mean(), on_step=True, on_epoch=True, prog_bar=True)
 
         return None
 
@@ -222,23 +222,23 @@ class BaseModule(LightningModule):
                 max_images_logs = len(targets)
 
             self.logger.log_image(
-                key="test_image", images=list(images.float())[:max_images_logs]
+                key="test/image", images=list(images.float())[:max_images_logs]
             )
 
             self.logger.log_image(
-                key="test_target_mask", images=list(targets.float())[:max_images_logs]
+                key="test/target_mask", images=list(targets.float())[:max_images_logs]
             )
             self.logger.log_image(
-                key="test_pred_mask",
+                key="test/pred_mask",
                 images=list(((preds.sigmoid() > self.hparams.threshold) * 1).float())[
                     :max_images_logs
                 ],
             )
 
-        self.log("test_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
-        self.log("test_dice", dice.mean(), on_step=True, on_epoch=True, prog_bar=True)
+        self.log("test/loss", loss, on_step=True, on_epoch=True, prog_bar=True)
+        self.log("test/dice", dice.mean(), on_step=True, on_epoch=True, prog_bar=True)
 
-        self.log("test_iou", iou.mean(), on_step=True, on_epoch=True, prog_bar=True)
+        self.log("test/iou", iou.mean(), on_step=True, on_epoch=True, prog_bar=True)
 
         return None
 

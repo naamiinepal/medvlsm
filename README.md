@@ -5,13 +5,14 @@
 ## Table of Contents
 - [Installation](#installation)
 - [Usage](#usage)
+  - [Pretrained Model Preparation](#pretrained-model-preparation) 
   - [Dataset Preparation](#dataset-preparation)
   - [Zero Shot Segmentation](#zero-shot-segmentation)
-  - [Fine-Tuning](#fine-tuning)
+  - [Finetuning](#finetuning)
 
 ## Installation
 
-To get started, it's recommended to create a Python environment using either Conda or venv. This helps to manage dependencies and ensure a consistent runtime environment.
+To get started, it's recommended to create a Python (preferably v3.10) environment using either Conda or venv. This helps to manage dependencies and ensure a consistent runtime environment.
 
 1. **Conda:**
   ```bash
@@ -33,8 +34,11 @@ pip install -r requirements.txt
 
 ## Usage
 
+### Pretrained Model Preparation
+Because the pretrained weights of *BiomedCLIP* and *CLIPSeg* are readily available in the *Hugging Face Model Hub* you do not need to save the weights manually. However, the [pretrained weights](https://github.com/DerrickWang005/CRIS.pytorch/issues/3) of *CRIS* were extracted and then saved within the folder `pretrained/`. Please refer to the config file [cris.yaml](configs/model/cris.yaml) for more information.
+
 ### Dataset Preparation
-Before running any experiments, you need to ensure that the provided dataset is correctly placed within the `data` folder at the root of the project. The directory structure of the `data` folder should look like this:
+Before running any experiments, you need to ensure that the provided dataset is correctly placed within the `data/` folder at the root of the project. The directory structure of the `data/` folder should look like this:
 ```
 data/
 │
@@ -62,14 +66,19 @@ Each dataset folder (`bkai_polyp`, `busi`, `camus`, etc.) contains three sub-dir
 
 To perform zero-shot segmentation, you can use the provided script. Open a terminal and navigate to the project directory, then execute the following command:
 ```bash
-bash scripts/zss.sh
+python scripts/zss.py
 ```
 This script will initiate the zero-shot segmentation process and produce the desired results.
 
-### Fine-Tuning
+### Finetuning
 
 If you need to run fine-tuning for your model, you can do so using the following script:
 ```bash
-bash scripts/finetune.sh
+python scripts/finetune.py
 ```
-This script will start the fine-tuning process, which is essential for customizing the model for specific tasks.
+This script will start the fine-tuning process, which is essential for customizing the model for specific tasks. For running inference, please update the defaults configs (such as `ckpt_path`, `models`, etc.) in `scripts/inference.py` to get the evulation metric or generate the output masks (in the original resolution).
+
+
+
+### Acknowledgement
+We would like to thank [Lightning-Hydra-Template](https://github.com/ashleve/lightning-hydra-template) for providing a modifiable framework for running multiple experiments while tracking the hyperparameters.

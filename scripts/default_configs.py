@@ -1,3 +1,5 @@
+from typing import Literal
+
 """
     DEFAULT CONFIGS BLOCK -- start
         Do not make any new changes to this block because it has to be used for future references
@@ -34,6 +36,8 @@ dataset_prompts = {
     "pooled_polyp": non_rad_prompts,
     "pooled_all": ["random"]
 }
+
+task_name: Literal["pred", "eval", "train"] = "eval"
 
 """
     DEFAULT CONFIGS BLOCK -- end

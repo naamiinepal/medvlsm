@@ -9,14 +9,14 @@ defaults:
 model_checkpoint:
   dirpath: ${paths.output_dir}/checkpoints
   filename: "best"
-  monitor: "val_dice_epoch"
+  monitor: "val/dice_epoch"
   mode: "max"
-  save_last: false
+  save_last: true
   auto_insert_metric_name: false
   save_top_k: 1
   
 early_stopping:
-  monitor: "val_dice_epoch"
+  monitor: "val/dice_epoch"
   patience: 20
   min_delta: 0.0001
   mode: "max"

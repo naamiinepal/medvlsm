@@ -1,12 +1,10 @@
 import json
 import random
-from typing import Any, Dict, List, Literal, Optional, Union, get_args, Tuple
+from typing import Any, Dict, Literal, Optional, get_args, Tuple
 
-import albumentations as A
 from PIL import Image
 from torchvision import transforms as T
 import open_clip
-from albumentations.pytorch import ToTensorV2
 from torch.utils.data import Dataset
 from transformers import CLIPTokenizer
 

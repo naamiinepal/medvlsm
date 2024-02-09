@@ -169,5 +169,7 @@ output
 # Evaluation code
 evaluate
 
-dump
-pretrain
+# Path to store the pretrained models' weights
+pretrained/*
+!pretrained/.gitkeep
+

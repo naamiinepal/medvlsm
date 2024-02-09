@@ -1,7 +1,7 @@
 _target_: src.models.BaseModule
 net:
   _target_: src.models.CRIS
-  clip_pretrain: pretrain/RN50.pt
+  clip_pretrain: pretrained/RN50.pt
   word_len: 77
   fpn_in: [512, 1024, 1024]
   fpn_out: [256, 512, 1024]
@@ -12,7 +12,7 @@ net:
   dim_ffn: 2048
   dropout: 0.2
   intermediate: false
-  cris_pretrain: pretrain/cris_best_single.pth
+  cris_pretrain: pretrained/cris_best_single.pth
 threshold: 0.35
 
 loss_fn: 

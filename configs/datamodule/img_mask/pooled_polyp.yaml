@@ -5,21 +5,24 @@ train_dataset:
     masks_dir: ${data_root}/kvasir_polyp/masks
     caps_file: ${data_root}/kvasir_polyp/anns/train.json
     img_size: ${img_size}
-    transforms: ${train_img_transforms}
+    img_transforms: ${train_img_transforms}
+    mask_transforms: ${train_mask_transforms}
 
   - _target_: src.datamodules.datasets.ImageMaskDataset
     images_dir: ${data_root}/clinicdb_polyp/images
     masks_dir: ${data_root}/clinicdb_polyp/masks
     caps_file: ${data_root}/clinicdb_polyp/anns/train.json
     img_size: ${img_size}
-    transforms: ${train_img_transforms}
+    img_transforms: ${train_img_transforms}
+    mask_transforms: ${train_mask_transforms}
 
   - _target_: src.datamodules.datasets.ImageMaskDataset
     images_dir: ${data_root}/bkai_polyp/images
     masks_dir: ${data_root}/bkai_polyp/masks
     caps_file: ${data_root}/bkai_polyp/anns/train.json
     img_size: ${img_size}
-    transforms: ${train_img_transforms}
+    img_transforms: ${train_img_transforms}
+    mask_transforms: ${train_mask_transforms}
 
 val_dataset:
   - _target_: src.datamodules.datasets.ImageMaskDataset
@@ -27,21 +30,24 @@ val_dataset:
     masks_dir: ${data_root}/kvasir_polyp/masks
     caps_file: ${data_root}/kvasir_polyp/anns/val.json
     img_size: ${img_size}
-    transforms: ${val_img_transforms}
+    img_transforms: ${val_img_transforms}
+    mask_transforms: ${val_mask_transforms}
 
   - _target_: src.datamodules.datasets.ImageMaskDataset
     images_dir: ${data_root}/clinicdb_polyp/images
     masks_dir: ${data_root}/clinicdb_polyp/masks
     caps_file: ${data_root}/clinicdb_polyp/anns/val.json
     img_size: ${img_size}
-    transforms: ${val_img_transforms}
+    img_transforms: ${val_img_transforms}
+    mask_transforms: ${val_mask_transforms}
 
   - _target_: src.datamodules.datasets.ImageMaskDataset
     images_dir: ${data_root}/bkai_polyp/images
     masks_dir: ${data_root}/bkai_polyp/masks
     caps_file: ${data_root}/bkai_polyp/anns/val.json
     img_size: ${img_size}
-    transforms: ${val_img_transforms}
+    img_transforms: ${val_img_transforms}
+    mask_transforms: ${val_mask_transforms}
 
 test_dataset:
   - _target_: src.datamodules.datasets.ImageMaskDataset
@@ -49,63 +55,72 @@ test_dataset:
     masks_dir: ${data_root}/kvasir_polyp/masks
     caps_file: ${data_root}/kvasir_polyp/anns/test.json
     img_size: ${img_size}
-    transforms: ${test_img_transforms}
+    img_transforms: ${test_img_transforms}
+    mask_transforms: ${test_mask_transforms}
 
   - _target_: src.datamodules.datasets.ImageMaskDataset
     images_dir: ${data_root}/clinicdb_polyp/images
     masks_dir: ${data_root}/clinicdb_polyp/masks
     caps_file: ${data_root}/clinicdb_polyp/anns/test.json
     img_size: ${img_size}
-    transforms: ${test_img_transforms}
+    img_transforms: ${test_img_transforms}
+    mask_transforms: ${test_mask_transforms}
 
   - _target_: src.datamodules.datasets.ImageMaskDataset 
     images_dir: ${data_root}/bkai_polyp/images
     masks_dir: ${data_root}/bkai_polyp/masks
     caps_file: ${data_root}/bkai_polyp/anns/test.json
     img_size: ${img_size}
-    transforms: ${test_img_transforms}
+    img_transforms: ${test_img_transforms}
+    mask_transforms: ${test_mask_transforms}
   
   - _target_: src.datamodules.datasets.ImageMaskDataset
     images_dir: ${data_root}/cvc300_polyp/images
     masks_dir: ${data_root}/cvc300_polyp/masks
     caps_file: ${data_root}/cvc300_polyp/anns/test.json
     img_size: ${img_size}
-    transforms: ${test_img_transforms}
+    img_transforms: ${test_img_transforms}
+    mask_transforms: ${test_mask_transforms}
 
   - _target_: src.datamodules.datasets.ImageMaskDataset
     images_dir: ${data_root}/cvc_colondb_polyp/images
     masks_dir: ${data_root}/cvc_colondb_polyp/masks
     caps_file: ${data_root}/cvc_colondb_polyp/anns/test.json
     img_size: ${img_size}
-    transforms: ${test_img_transforms}
+    img_transforms: ${test_img_transforms}
+    mask_transforms: ${test_mask_transforms}
 
   - _target_: src.datamodules.datasets.ImageMaskDataset
     images_dir: ${data_root}/etis_polyp/images
     masks_dir: ${data_root}/etis_polyp/masks
     caps_file: ${data_root}/etis_polyp/anns/test.json
     img_size: ${img_size}
-    transforms: ${test_img_transforms}
+    img_transforms: ${test_img_transforms}
+    mask_transforms: ${test_mask_transforms}
 
   - _target_: src.datamodules.datasets.ImageMaskDataset
     images_dir: ${data_root}/cvc300_polyp/images
     masks_dir: ${data_root}/cvc300_polyp/masks
     caps_file: ${data_root}/cvc300_polyp/anns/train.json
     img_size: ${img_size}
-    transforms: ${test_img_transforms}
+    img_transforms: ${test_img_transforms}
+    mask_transforms: ${test_mask_transforms}
 
   - _target_: src.datamodules.datasets.ImageMaskDataset
     images_dir: ${data_root}/cvc_colondb_polyp/images
     masks_dir: ${data_root}/cvc_colondb_polyp/masks
     caps_file: ${data_root}/cvc_colondb_polyp/anns/train.json
     img_size: ${img_size}
-    transforms: ${test_img_transforms}
+    img_transforms: ${test_img_transforms}
+    mask_transforms: ${test_mask_transforms}
 
   - _target_: src.datamodules.datasets.ImageMaskDataset
     images_dir: ${data_root}/etis_polyp/images
     masks_dir: ${data_root}/etis_polyp/masks
     caps_file: ${data_root}/etis_polyp/anns/train.json
     img_size: ${img_size}
-    transforms: ${test_img_transforms}
+    img_transforms: ${test_img_transforms}
+    mask_transforms: ${test_mask_transforms}
 
 batch_size: 16
 train_val_split: [0.8, 0.2]
