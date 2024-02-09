@@ -147,7 +147,8 @@ dmypy.json
 
 # Lightning-Hydra-Template
 configs/local/default.yaml
-data/
+data/*
+!data/.gitkeep
 logs/
 .env
 .autoenv

@@ -19,12 +19,11 @@ accelerator = "gpu"
 devices = [0]
 precision = "16-mixed"
 debugger = False
-models = ["clipseg", "cris", "biomed_clipseg", "biomed_clipseg_d", "zsref"]
+models = ["clipseg", "cris", "biomed_clipseg", "biomed_clipseg_d"]
 
 models_configs = {
     "clipseg": {"batch_size": 128, "lr": 0.002},
     "cris": {"batch_size": 32, "lr": 0.00002},
-    "zsref": {"batch_size": 1, "lr": 0.0002},
 }
 non_rad_prompts = [f"p{i}" for i in range(10)]
 chexlocalze_prompts = [f"p{i}" for i in range(7)]
@@ -70,7 +69,6 @@ dataset_prompts = {
 
 models = [
     # "clipseg",
-    # "zsref",
     # "cris",
     "biomed_clipseg",
     "biomed_clipseg_d"
@@ -97,7 +95,6 @@ models_configs = {
     "biomed_clipseg": {"batch_size": 128, "lr": 0.002},
     "biomed_clipseg_d": {"batch_size": 128, "lr": 0.002},
     "cris": {"batch_size": 32, "lr": 0.00002},
-    "zsref": {"batch_size": 1, "lr": 0.0002},
 }
 
 # CUSTOM CONFIG -- end:
