@@ -45,7 +45,7 @@ class ImageTextMaskDataset(Dataset):
         images_dir: str,
         masks_dir: str,
         caps_file: Optional[str] = None,
-        img_size: Tuple[int, int] = (224, 224),
+        img_size: Tuple[int, int] = (352, 352),
         context_length: int = 77,
         img_transforms: Optional[T.Compose] = None,
         mask_transforms: Optional[T.Compose] = None,

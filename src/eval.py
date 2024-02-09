@@ -39,6 +39,7 @@ from typing import List, Tuple
 
 import hydra
 import pytorch_lightning as pl
+import torch
 import torchvision
 import torchvision.transforms.functional as TF
 from omegaconf import DictConfig
@@ -46,6 +47,8 @@ from pytorch_lightning import LightningDataModule, LightningModule, Trainer
 from pytorch_lightning.loggers.logger import Logger
 
 from src import utils
+
+torch.set_float32_matmul_precision("medium")
 
 log = utils.get_pylogger(__name__)
 
@@ -111,7 +114,7 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
         if cfg.get("output_masks_dir"):
             output_masks_dir = cfg.get("output_masks_dir")
             log.info("Generating masks of test dataset")
-            pred_outputs = predict(
+            pred_outputs = trainer.predict(
                 model=model,
                 dataloaders=datamodule,
                 ckpt_path=cfg.ckpt_path,
@@ -173,6 +176,7 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
             output_masks_dir = cfg.get("output_masks_dir")
 
             log.info(f"Generating masks of test dataset")
+            
             pred_outputs = trainer.predict(
                 model=model,
                 dataloaders=datamodule,

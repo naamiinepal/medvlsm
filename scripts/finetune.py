@@ -11,7 +11,7 @@ from default_configs import *
 
 # CUSTOM CONFIGS BLOCK -- start:
 dataset_prompts = {
-    # "kvasir_polyp": non_rad_prompts,
+    "kvasir_polyp": non_rad_prompts,
     # "bkai_polyp": non_rad_prompts, 
     # "clinicdb_polyp": non_rad_prompts,
     # "isic": non_rad_prompts,
@@ -20,14 +20,14 @@ dataset_prompts = {
     # "busi": busi_prompts,
     # "chexlocalize": chexlocalze_prompts,
     # "pooled_polyp": non_rad_prompts,
-    "pooled_all": ["random"]
+    # "pooled_all": ["random"]
 }
 
 models = [
-    # "clipseg",
     # "cris",
-    "biomedclipseg",
-    # "biomedclipseg_d"
+    # "clipseg",
+    # "biomed_clipseg",
+    "biomed_clipseg_d"
 ]
 freeze_encoder = True
 
@@ -43,7 +43,7 @@ for model in models:
         for p in prompts:
             command = f"python src/train.py \
                 experiment={model}.yaml \
-                experiment_name={model}_train_only_dec_{dataset}_{p} \
+                experiment_name={model}_ft_{dataset}_{p} \
                 datamodule=img_txt_mask/{dataset}.yaml \
                 datamodule.batch_size={batch_size} \
                 model.optimizer.lr={lr} \
@@ -51,7 +51,8 @@ for model in models:
                 trainer.precision={precision} \
                 trainer.devices={devices} \
                 prompt_type={p} \
-                tags='[{model}, {dataset}, train_only_dec, {p}]'"
+                tags='[{model}, {dataset}, finetune, {p}]' \
+                output_masks_dir=output_masks/{model}/ft/{dataset}/{p}"
 
             if debugger:
                 command = f"{command} debug=default"

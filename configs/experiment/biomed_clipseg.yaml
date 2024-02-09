@@ -9,7 +9,7 @@
 
 defaults:
   - override /datamodule: ???
-  - override /model: biomedclipseg.yaml
+  - override /model: biomed_clipseg.yaml
   - override /callbacks: default.yaml
   - override /trainer: default.yaml
   - override /logger: wandb.yaml
