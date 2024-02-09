@@ -143,7 +143,6 @@ dmypy.json
 *.h5
 *.tar
 *.tar.gz
-/pretrained
 
 # Lightning-Hydra-Template
 configs/local/default.yaml
