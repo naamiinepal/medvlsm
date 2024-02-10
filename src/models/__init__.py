@@ -6,3 +6,4 @@ from .cris_model import *
 from .unetpp import *
 from .unet import *
 from .deeplabv3plus import *
+from .clipseg_adapter import *

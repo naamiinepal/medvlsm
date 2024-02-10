@@ -13,6 +13,7 @@ freeze_encoder = False
 
 models_configs = {
     "clipseg": {"batch_size": 128, "lr": 0.002},
+    "clipseg_adapter": {"batch_size": 128, "lr": 0.002},
     "biomed_clipseg": {"batch_size": 128, "lr": 0.002},
     "biomed_clipseg_d": {"batch_size": 128, "lr": 0.002},
     "cris": {"batch_size": 32, "lr": 0.00002},

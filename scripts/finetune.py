@@ -23,12 +23,13 @@ from default_configs import *
 #     "pooled_all": ["random"]
 # }
 
-# models = [
-#     "clipseg",
-#     "cris",
-#     "biomed_clipseg",
-#     "biomed_clipseg_d"
-# ]
+models = [
+    "clipseg_adapter",
+    "cris",
+    "biomed_clipseg",
+    "biomed_clipseg_d"
+]
+precision=32
 # freeze_encoder = True
 
 # CUSTOM CONFIGS BLOCK -- end:
