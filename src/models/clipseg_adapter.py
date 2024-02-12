@@ -37,11 +37,15 @@ class CLIPSegAdapter(nn.Module):
         self.clipseg.requires_grad_(not freeze_clipseg)
 
         # The trainable params
-        self.extract_adapters = nn.ModuleList([
+        self.vision_extract_adapters = nn.ModuleList([
             Adapter(input_dim=768, adapter_dim=512) for _ in self.clipseg.extract_layers
         ])
 
-        self.cond_adapter = Adapter(input_dim=512, adapter_dim=512)
+        self.cond_adapter = Adapter(input_dim=512, adapter_dim=256)
+
+        self.text_extract_adapters = nn.ModuleList([
+            Adapter(input_dim=512, adapter_dim=256) for _ in self.clipseg.extract_layers
+        ])
 
     def forward(
         self,
@@ -57,25 +61,29 @@ class CLIPSegAdapter(nn.Module):
         )
         # pooled_output = self.clip.visual_projection(vision_outputs[1])
 
-        hidden_states, pooled_output = vision_outputs.hidden_states, vision_outputs.pooler_output
+        vision_hidden_states, vision_pooled_output = vision_outputs.hidden_states, vision_outputs.pooler_output
 
         # we add +1 here as the hidden states also include the initial embeddings
-        activations = [adapter(hidden_states[i + 1]) for i, adapter in zip(self.clipseg.extract_layers, self.extract_adapters)]
+        activations = [adapter(vision_hidden_states[i + 1]) for i, adapter in zip(self.clipseg.extract_layers, self.vision_extract_adapters)]
 
-        
+
         # step 2: compute conditional embeddings from text on;y
-        conditional_embeddings = self.clipseg.get_conditional_embeddings(
-            batch_size=pixel_values.shape[0],
+        text_outputs = self.clip.text_model(
             input_ids=input_ids,
             attention_mask=attention_mask,
+            output_hidden_states=True
         )
+
+        text_hidden_states, text_pooled_output = text_outputs.hidden_states, text_outputs.pooler_output
+
+        conditional_embeddings = self.clip.text_projection(text_pooled_output)
         conditional_embeddings = self.cond_adapter(conditional_embeddings)
 
-        # step 3: forward both the pooled output and conditional emnbedding to an adapter module
-        # fused_embeddings = self.adapter(pooled_output, conditional_embeddings)
+        for i, adapter in zip(self.clipseg.extract_layers, self.text_extract_adapters):
+            conditional_embeddings += adapter(text_hidden_states[i+1][:,-1]) 
 
         # step 4: forward both the hidden_activations and fused embedding through the lightweight decoder to predict masks
-        decoder_outputs = self.clipseg.decoder(activations, conditional_embeddings)
+        decoder_outputs = self.clipseg.decoder(activations, conditional_embeddings, output_hidden_states=True,)
         logits = decoder_outputs.logits
 
         if logits.ndim == 2:
