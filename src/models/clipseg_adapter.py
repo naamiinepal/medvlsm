@@ -1,3 +1,5 @@
+from typing import Optional
+
 from torch import nn
 from transformers import CLIPSegForImageSegmentation
 import torch
@@ -34,15 +36,18 @@ class CLIPSegAdapter(nn.Module):
 
         self.clipseg.requires_grad_(not freeze_clipseg)
 
+        # The trainable params
         self.extract_adapters = nn.ModuleList([
             Adapter(input_dim=768, adapter_dim=512) for _ in self.clipseg.extract_layers
         ])
 
+        self.cond_adapter = Adapter(input_dim=512, adapter_dim=512)
+
     def forward(
         self,
-        pixel_values: torch.Tensor,
         input_ids: torch.Tensor,
-        attention_mask: torch.Tensor,
+        pixel_values: torch.Tensor,
+        attention_mask: Optional[torch.Tensor] = None,
         **kwargs
     ):
         # step 1: forward the query images through the frozen CLIP vision encoder
@@ -64,6 +69,7 @@ class CLIPSegAdapter(nn.Module):
             input_ids=input_ids,
             attention_mask=attention_mask,
         )
+        conditional_embeddings = self.cond_adapter(conditional_embeddings)
 
         # step 3: forward both the pooled output and conditional emnbedding to an adapter module
         # fused_embeddings = self.adapter(pooled_output, conditional_embeddings)

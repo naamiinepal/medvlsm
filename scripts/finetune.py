@@ -30,7 +30,9 @@ models = [
     "biomed_clipseg_d"
 ]
 precision=32
+devices=[1]
 # freeze_encoder = True
+
 
 # CUSTOM CONFIGS BLOCK -- end:
 

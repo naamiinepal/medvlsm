@@ -157,8 +157,8 @@ class ImageTextMaskDataset(Dataset):
         input_ids = text_enc["input_ids"][0]
         attention_mask = text_enc["attention_mask"][0]
         return dict(
-            pixel_values=image,
             input_ids=input_ids,
+            pixel_values=image,
             attention_mask=attention_mask,
             mask=mask,
             mask_name=cap["mask_name"],

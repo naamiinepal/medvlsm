@@ -1,4 +1,7 @@
+from typing import Optional
+
 from torch import nn
+import torch
 from transformers import CLIPSegForImageSegmentation
 
 
@@ -16,7 +19,15 @@ class CLIPSeg(nn.Module):
         self.clipseg.clip.requires_grad_(not freeze_encoder)
         self.clipseg.decoder.requires_grad_(not freeze_decoder)
 
-    def forward(self, **kwargs):
-        B, C, H, W = kwargs["pixel_values"].shape
-        outputs = self.clipseg(**kwargs)
+    def forward(
+        self, 
+        input_ids:torch.Tensor, 
+        pixel_values:torch.Tensor, 
+        attention_mask: Optional[torch.Tensor] = None, 
+        **kwargs
+    ):
+
+        B, C, H, W = pixel_values.shape
+        outputs = self.clipseg(input_ids, pixel_values, attention_mask, **kwargs)
+
         return outputs.logits.view(B, 1, H, W)
