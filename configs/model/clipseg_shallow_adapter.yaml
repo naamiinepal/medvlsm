@@ -2,6 +2,11 @@ _target_: src.models.BaseModule
 net:
   _target_: src.models.CLIPSegAdapter
   clipseg_hf_api: ${extras.clipseg_hf_api}
+  adapter_dim: 512
+  freeze_clipseg: true
+  adapter_in_v: true
+  adapter_in_l: true
+  adapter_in_cond: true
 
 loss_fn: 
   _target_: monai.losses.DiceCELoss

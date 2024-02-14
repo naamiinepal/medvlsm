@@ -9,7 +9,7 @@
 
 defaults:
   - override /datamodule: ???
-  - override /model: cris.yaml
+  - override /model: clipseg_shallow_adapter.yaml
   - override /callbacks: default.yaml
   - override /trainer: default.yaml
   - override /logger: wandb.yaml
@@ -22,11 +22,13 @@ experiment_name: ??? # experiment name for logging and checkpointing
 
 model:
   net:
-    freeze_encoder: false
+    adapter_in_v: true
+    adapter_in_l: true
+    adapter_in_cond: false
 
 trainer:
   min_epochs: 10
-  max_epochs: 1000
+  max_epochs: 200
   gradient_clip_val: 0.5
   accelerator: gpu
   devices: [0]
@@ -34,9 +36,9 @@ trainer:
 
 logger:
   wandb:
-    project: medvlsm
-    name: ${experiment_name}
+    project: medvlsm_v2
     tags: ${tags}
+    name: ${experiment_name}
 
 
 ############################
@@ -44,15 +46,14 @@ logger:
 ############################
 
 # Default prompts for each models
-img_size: [416, 416] # 352 for clipseg or 224 for biomedclipseg, or 416 for cris
+img_size: [352, 352] # 352 for clipseg or 224 for biomedclipseg, or 416 for cris
 tokenizer_type: clipseg # clipseg or biomedclip
 context_length: 77 # 77 for clip_based, 256 for biomedclip
-tags: [ CRIS ]
+tags: [ CLIPSegAdapter ]
 seed: 42
 
-img_mean: [0.48145466, 0.4578275, 0.40821073]
-img_std: [0.26862954, 0.26130258, 0.27577711]
-
+img_mean: [0.485, 0.456, 0.406]
+img_std: [0.229, 0.224, 0.225]
 
 img_transforms:
   _target_: torchvision.transforms.Compose
@@ -81,5 +82,3 @@ val_mask_transforms: ${mask_transforms}
 
 test_img_transforms: ${img_transforms}
 test_mask_transforms: ${mask_transforms}
-
-

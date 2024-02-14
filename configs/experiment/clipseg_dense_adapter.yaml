@@ -9,7 +9,7 @@
 
 defaults:
   - override /datamodule: ???
-  - override /model: unet.yaml
+  - override /model: clipseg_shallow_adapter.yaml
   - override /callbacks: default.yaml
   - override /trainer: default.yaml
   - override /logger: wandb.yaml
@@ -20,9 +20,15 @@ defaults:
 
 experiment_name: ??? # experiment name for logging and checkpointing
 
+model:
+  net:
+    adapter_in_v: true
+    adapter_in_l: false
+    adapter_in_cond: true
+
 trainer:
   min_epochs: 10
-  max_epochs: 1000
+  max_epochs: 200
   gradient_clip_val: 0.5
   accelerator: gpu
   devices: [0]
@@ -30,7 +36,7 @@ trainer:
 
 logger:
   wandb:
-    project: medvlsm
+    project: medvlsm_v2
     tags: ${tags}
     name: ${experiment_name}
 
@@ -40,11 +46,10 @@ logger:
 ############################
 
 # Default prompts for each models
-img_size: 256 # 352 or 224
-tokenizer_type: null # clip_seg or biomedclip
-context_length: null # 77 for clip_seg, 256 for biomedclip
-prompt_type: null
-tags: [ UNet ]
+img_size: [352, 352] # 352 for clipseg or 224 for biomedclipseg, or 416 for cris
+tokenizer_type: clipseg # clipseg or biomedclip
+context_length: 77 # 77 for clip_based, 256 for biomedclip
+tags: [ CLIPSegAdapter ]
 seed: 42
 
 img_mean: [0.485, 0.456, 0.406]
@@ -77,5 +82,3 @@ val_mask_transforms: ${mask_transforms}
 
 test_img_transforms: ${img_transforms}
 test_mask_transforms: ${mask_transforms}
-
-
