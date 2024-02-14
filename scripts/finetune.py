@@ -11,14 +11,16 @@ from default_configs import *
 
 # CUSTOM CONFIGS BLOCK -- start:
 models_configs = {
-    "clipseg": {"batch_size": 64, "lr": 0.002},
-    "clipseg_v_adapter": {"batch_size": 64, "lr": 0.002},
-    "clipseg_vl_adapter": {"batch_size": 64, "lr": 0.002},
-    "clipseg_vlc_adapter": {"batch_size": 64, "lr": 0.002},
-    "biomed_clipseg": {"batch_size": 128, "lr": 0.002},
-    "biomed_clipseg_d": {"batch_size": 128, "lr": 0.002},
-    "cris": {"batch_size": 32, "lr": 0.00002},
+    "clipseg": {"batch_size": 32, "lr": 0.001},
+    "clipseg_shallow_adapter_v": {"batch_size": 32, "lr": 0.001},
+    "clipseg_shallow_adapter_vl": {"batch_size": 32, "lr": 0.001},
+    "clipseg_shallow_adapter_vlc": {"batch_size": 32, "lr": 0.001},
+    "clipseg_dense_adapter_v": {"batch_size": 32, "lr": 0.001},
+    "clipseg_dense_adapter_vl": {"batch_size": 32, "lr": 0.001},
+    "clipseg_dense_adapter_vlc": {"batch_size": 32, "lr": 0.001},
+
 }
+
 
 prompts = ["random"]
 dataset_prompts = {
@@ -34,13 +36,14 @@ dataset_prompts = {
 
 models = [
     # "clipseg",
-    "clipseg_v_adapter",
-    "clipseg_vl_adapter",
-    "clipseg_vlc_adapter",
-    # "cris",
-    # "biomed_clipseg",
-    # "biomed_clipseg_d"
+    # "clipseg_shallow_adapter_v",
+    # "clipseg_shallow_adapter_vl",
+    # "clipseg_shallow_adapter_vlc",
+    "clipseg_dense_adapter_v",
+    "clipseg_dense_adapter_vl",
+    "clipseg_dense_adapter_vlc",
 ]
+
 precision=32
 devices=[0]
 # freeze_encoder = True
@@ -58,7 +61,7 @@ for model in models:
         for p in prompts:
             command = f"python src/train.py \
                 experiment={model}.yaml \
-                experiment_name={model}_ft_{dataset}_{p} \
+                experiment_name={model}_{dataset}_{p} \
                 datamodule=img_txt_mask/{dataset}.yaml \
                 datamodule.batch_size={batch_size} \
                 model.optimizer.lr={lr} \

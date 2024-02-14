@@ -9,7 +9,7 @@
 
 defaults:
   - override /datamodule: ???
-  - override /model: clipseg_shallow_adapter.yaml
+  - override /model: clipseg_dense_adapter.yaml
   - override /callbacks: default.yaml
   - override /trainer: default.yaml
   - override /logger: wandb.yaml
@@ -23,7 +23,7 @@ experiment_name: ??? # experiment name for logging and checkpointing
 model:
   net:
     adapter_in_v: true
-    adapter_in_l: false
+    adapter_in_l: true
     adapter_in_cond: true
 
 trainer:

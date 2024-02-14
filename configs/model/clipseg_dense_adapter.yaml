@@ -1,8 +1,8 @@
 _target_: src.models.BaseModule
 net:
-  _target_: src.models.CLIPSegAdapter
+  _target_: src.models.CLIPSegDenseAdapter
   clipseg_hf_api: ${extras.clipseg_hf_api}
-  adapter_dim: 512
+  adapter_dim: 64
   freeze_clipseg: true
   adapter_in_v: true
   adapter_in_l: true

@@ -3,7 +3,11 @@ from typing import Optional
 from torch import nn
 from transformers import CLIPSegForImageSegmentation
 import torch
-from transformers.modeling_attn_mask_utils import _create_4d_causal_attention_mask
+from transformers.modeling_attn_mask_utils import (
+    _create_4d_causal_attention_mask,
+    _prepare_4d_attention_mask,
+)
+
 
 class Adapter(nn.Module):
 
@@ -122,6 +126,7 @@ class CLIPSegAdapter(nn.Module):
 
         conditional_embeddings = self.clip.text_projection(text_pooled_output)
         if self.adapter_in_cond:
+            # Apply adapter on the conditional embedding here
             conditional_embeddings = self.cond_adapter(conditional_embeddings)
 
         if self.adapter_in_l:
@@ -136,6 +141,8 @@ class CLIPSegAdapter(nn.Module):
                     torch.arange(h_state.shape[0], device=h_state.device),
                     input_ids.to(dtype=torch.int, device=h_state.device).argmax(dim=-1),
                 ]
+
+                # Apply the adapter on the hidden embeddings of texts as skip connections to the condtional embeddings
                 conditional_embeddings += adapter(h_state)
 
         # step 4: forward both the hidden_activations and fused embedding through the lightweight decoder to predict masks
@@ -267,52 +274,62 @@ class CLIPSegDenseAdapter(nn.Module):
 
         return encoder_hidden_states
 
+
     def text_forward(
         self,
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
     ):
-        clip_text_model = self.clipseg.clip.text_model
 
         input_shape = input_ids.size()
         input_ids = input_ids.view(-1, input_shape[-1])
 
-        hidden_states = clip_text_model.embeddings(input_ids=input_ids)
+        hidden_states = self.clipseg.clip.text_model.embeddings(input_ids=input_ids)
         causal_attention_mask = _create_4d_causal_attention_mask(
             input_shape, hidden_states.dtype, device=hidden_states.device
         )
-        
-        for idx, encoder_layer in enumerate(clip_text_model.encoder.layers):
+
+        # expand attention_mask
+        if attention_mask is not None:
+            # [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
+            attention_mask = _prepare_4d_attention_mask(
+                attention_mask, hidden_states.dtype
+            )
+
+        for idx, encoder_layer in enumerate(
+            self.clipseg.clip.text_model.encoder.layers
+        ):
             residual = hidden_states
 
             hidden_states = encoder_layer.layer_norm1(hidden_states)
-            hidden_states, _ = self.self_attn(
+            hidden_states, _ = encoder_layer.self_attn(
                 hidden_states=hidden_states,
                 attention_mask=attention_mask,
                 causal_attention_mask=causal_attention_mask,
             )
-            
-            # Apply adapter before residual
+
+            # Apply adapter before residual addition
             if self.adapter_in_l and idx < len(self.l_attn_adapters):
-                encoder_state = self.l_attn_adapters[idx](encoder_state)
-            
+                hidden_states = self.l_attn_adapters[idx](hidden_states)
+
             hidden_states = residual + hidden_states
 
             residual = hidden_states
-            hidden_states = self.layer_norm2(hidden_states)
-            hidden_states = self.mlp(hidden_states)
+            hidden_states = encoder_layer.layer_norm2(hidden_states)
+            hidden_states = encoder_layer.mlp(hidden_states)
 
-            # Apply adapter before residual adding
+            # Apply adapter before residual addition
             if self.adapter_in_l and idx < len(self.l_out_adapters):
-                encoder_state = self.l_out_adapters[idx](encoder_state)
+                hidden_states = self.l_out_adapters[idx](hidden_states)
 
             hidden_states = residual + hidden_states
 
-        last_hidden_state = clip_text_model.final_layer_norm(hidden_states)
-
+        last_hidden_state = self.clipseg.clip.text_model.final_layer_norm(hidden_states)
         pooled_output = last_hidden_state[
             torch.arange(last_hidden_state.shape[0], device=last_hidden_state.device),
-            input_ids.to(dtype=torch.int, device=last_hidden_state.device).argmax(dim=-1),
+            input_ids.to(dtype=torch.int, device=last_hidden_state.device).argmax(
+                dim=-1
+            ),
         ]
         text_features = self.clipseg.clip.text_projection(pooled_output)
 

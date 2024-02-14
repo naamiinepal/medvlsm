@@ -9,30 +9,34 @@
 
 defaults:
   - override /datamodule: ???
-  - override /model: biomed_clipseg.yaml
+  - override /model: clipseg_dense_adapter.yaml
   - override /callbacks: default.yaml
   - override /trainer: default.yaml
   - override /logger: wandb.yaml
   - override /extras: default.yaml
 
-experiment_name: ??? # experiment name for logging and checkpointing
-
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
+experiment_name: ??? # experiment name for logging and checkpointing
+
+model:
+  net:
+    adapter_in_v: true
+    adapter_in_l: false
+    adapter_in_cond: false
 
 trainer:
   min_epochs: 10
-  max_epochs: 1000
+  max_epochs: 200
   gradient_clip_val: 0.5
   accelerator: gpu
   devices: [0]
   precision: 16-mixed
 
-
 logger:
   wandb:
-    project: medvlsm
+    project: medvlsm_v2
     tags: ${tags}
     name: ${experiment_name}
 
@@ -41,19 +45,15 @@ logger:
 # Additional parameters    #
 ############################
 
-#####
-# Default prompts for each models, adapted from BiomedCLIP model: 
-# https://huggingface.co/microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224
-#####
-
-img_size: [224, 224] # 224 for Biomedclipseg
-tokenizer_type: biomedclip # clipseg or biomedclip
-context_length: 256 # 77 for clipseg, 256 for biomedclip
-tags: [BiomedCLIPSeg]
+# Default prompts for each models
+img_size: [352, 352] # 352 for clipseg or 224 for biomedclipseg, or 416 for cris
+tokenizer_type: clipseg # clipseg or biomedclip
+context_length: 77 # 77 for clip_based, 256 for biomedclip
+tags: [ CLIPSegAdapter ]
 seed: 42
 
-img_mean: [0.48145466, 0.4578275, 0.40821073]
-img_std: [0.26862954, 0.26130258, 0.27577711]
+img_mean: [0.485, 0.456, 0.406]
+img_std: [0.229, 0.224, 0.225]
 
 img_transforms:
   _target_: torchvision.transforms.Compose
