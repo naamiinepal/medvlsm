@@ -18,7 +18,7 @@ models_configs = {
     "clipseg_dense_adapter_v": {"batch_size": 32, "lr": 0.001},
     "clipseg_dense_adapter_vl": {"batch_size": 32, "lr": 0.001},
     "clipseg_dense_adapter_vlc": {"batch_size": 32, "lr": 0.001},
-    "san": {"batch_size": 8, "lr": 0.001}
+    "san": {"batch_size": 8, "lr": 0.0005}
 }
 
 
@@ -35,8 +35,8 @@ dataset_prompts = {
 }
 
 models = [
-    # "san"
-    "clipseg",
+    "san"
+    # "clipseg",
     # "clipseg_shallow_adapter_v",
     # "clipseg_shallow_adapter_vl",
     # "clipseg_shallow_adapter_vlc",
@@ -45,7 +45,7 @@ models = [
     # "clipseg_dense_adapter_vlc",
 ]
 
-precision=32
+precision="16-mixed"
 devices=[0]
 # freeze_encoder = True
 
@@ -70,7 +70,7 @@ for model in models:
                 trainer.precision={precision} \
                 trainer.devices={devices} \
                 prompt_type={p} \
-                logger=csv.yaml \
+                logger=wandb.yaml \
                 tags='[{model}, {dataset}, finetune, {p}]' \
                 output_masks_dir=output_masks/{model}/ft/{dataset}/{p}"
 

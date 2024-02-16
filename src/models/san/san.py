@@ -33,8 +33,6 @@ class SAN(nn.Module):
             model_name="ViT-B/16", pretrained="openai"
         )
         
-        self.clip_model.requires_grad_(False)
-        
         self.sem_seg_postprocess_before_inference = sem_seg_postprocess_before_inference
         self.size_divisibility = size_divisibility
 
@@ -50,35 +48,35 @@ class SAN(nn.Module):
         self,
         pixel_values: torch.Tensor,
         input_ids: torch.Tensor,
-        stage: RunningStage,
         **kwargs
     ):
-
         if self.asymetric_input:
             clip_input = F.interpolate(
                 pixel_values, scale_factor=self.clip_resolution, mode="bilinear"
             )
 
-        clip_image_features = self.clip_visual_extractor(clip_input)
+        with torch.no_grad():
+            clip_image_features = self.clip_visual_extractor(clip_input)
+        
         mask_preds, attn_biases = self.side_adapter_network(
             pixel_values, clip_image_features
         )
 
-        text_features = self.clip_model.encode_text(input_ids)
-        # !! Could be optimized to run in parallel.
-        mask_embs = [
-            self.clip_rec_head(clip_image_features, attn_bias, normalize=True)
-            for attn_bias in attn_biases
-        ]  # [B,N,C]
-        print("mask_embs[0].shape", mask_embs[0].shape, "text_features", text_features.shape)
+        with torch.no_grad():
+            text_features = self.clip_model.encode_text(input_ids)
+            # !! Could be optimized to run in parallel.
+            mask_embs = [
+                self.clip_rec_head(clip_image_features, attn_bias, normalize=True)
+                for attn_bias in attn_biases
+            ]  # [B,N,C]
+
         mask_logits = [
-            torch.einsum("iqd,td->iqt", mask_emb, text_features)
+            torch.einsum("bqd,bd->bqd", mask_emb, text_features)
             for mask_emb in mask_embs
         ]
 
         mask_logits = mask_logits[-1]
         mask_preds = mask_preds[-1]
-        
         mask_preds = F.interpolate(
             mask_preds,
             size=(pixel_values.shape[-2], pixel_values.shape[-1]),
@@ -86,9 +84,10 @@ class SAN(nn.Module):
             align_corners=False,
         )
         
-        print("mask_cls.shape", mask_logits.shape, "mask_pred.shape", mask_preds.shape)
-        pred_masks = torch.einsum("iqt,iqhw->thw", mask_logits, mask_preds)[:,None]
-        print(pred_masks.requires_grad)
+        mask_logits = mask_logits.mean(dim=-1)
+
+        pred_masks = torch.einsum("bq,bqhw->bhw", mask_logits, mask_preds)[:,None]
+        
         return pred_masks
         # if stage == RunningStage.TRAINING:
         #     return {

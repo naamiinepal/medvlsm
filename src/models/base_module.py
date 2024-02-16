@@ -1,5 +1,5 @@
 import re
-from typing import Any, Callable, Mapping, Optional, Literal
+from typing import Any, Callable, Mapping, Optional
 
 import torch
 from monai.networks import one_hot
@@ -7,7 +7,6 @@ from monai.metrics.meandice import compute_dice
 from monai.metrics.meaniou import compute_iou
 from pytorch_lightning import LightningModule
 from pytorch_lightning.loggers.wandb import WandbLogger
-from pytorch_lightning.trainer.states import RunningStage
 from torch import nn
 from torch.nn import functional as F
 
@@ -35,7 +34,7 @@ class BaseModule(LightningModule):
     def __init__(
         self,
         net: nn.Module,
-        loss_fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
+        loss_fn: Callable[[torch.Tensor, torch.Tensor, bool], torch.Tensor],
         optimizer: torch.optim.Optimizer,
         scheduler: Optional[torch.optim.lr_scheduler.LRScheduler] = None,
         scheduler_monitor: str = "val/loss",
@@ -63,36 +62,44 @@ class BaseModule(LightningModule):
         # self.val_acc_best.reset()
         pass
 
-    def step(self, batch: _mapping_str_any, stage: RunningStage) -> _mapping_str_any:
+    def step(self, batch: _mapping_str_any) -> _mapping_str_any:
         masks, mask_names, heights, widths, sentences = (
             batch.pop("mask"),
             batch.pop("mask_name"),
             batch.pop("height"),
             batch.pop("width"),
-            batch.pop("sentence"),
+            batch.pop("sentence")
         )
         dataset = None
         if "dataset" in batch:
             dataset = batch.pop("dataset")
         # Pass batch that contains image, text, and attention_mask (optional) tensors to the model
-        net_outputs: torch.Tensor = self.forward(
-            stage=stage,
-            **batch,
+        pred_masks: torch.Tensor = self.forward(
+            **batch
         )  # Logits with shape (B, N, H, W)
 
         # Convert mask shape: (B, H, W) -> (B, 1, H, W)
         if len(masks.shape) == 3:
             masks = masks[:, None]
 
-        pred_masks = F.sigmoid(net_outputs)
+        if self.hparams.multi_class:
+            # Convert prediction logits to softmax
+            pred_masks = pred_masks.softmax(dim=1)
+        else:
+            # Convert prediction logits to sigmoid
+            pred_masks = F.sigmoid(pred_masks)
 
         # The loss function should accept sigmoid predictions and gt mask of same shape
-        loss = self.loss_fn(net_outputs, masks)
-        
+        loss = self.loss_fn(pred_masks, masks)
+
         # Convert prediction sigmoids to binary masks
         pred_masks = pred_masks > self.hparams.threshold
 
-        one_hot_masks = masks
+        # Convert masks to one-hot encoding if multi-class
+        if self.hparams.multi_class:
+            one_hot_masks = one_hot(masks, num_classes=pred_masks.shape[1])
+        else:
+            one_hot_masks = masks
 
         # Compute metrics
         dice = compute_dice(
@@ -118,7 +125,7 @@ class BaseModule(LightningModule):
         return step_out
 
     def training_step(self, batch: _mapping_str_any, batch_idx: int):
-        step_out = self.step(batch, stage=RunningStage.TRAINING)
+        step_out = self.step(batch)
         loss, dice, iou = (
             step_out["loss"],
             step_out["dice"],
@@ -144,7 +151,7 @@ class BaseModule(LightningModule):
         return torch.compile(self)
 
     def validation_step(self, batch: _mapping_str_any, batch_idx: int):
-        step_out = self.step(batch, stage=RunningStage.VALIDATING)
+        step_out = self.step(batch)
         loss, images, targets, preds, dice, iou = (
             step_out["loss"],
             step_out["images"],
@@ -159,7 +166,7 @@ class BaseModule(LightningModule):
             batch_idx == 0
             and isinstance(self.logger, WandbLogger)
             and self.hparams.log_output_masks
-        ):
+        )  :
             # Only Log 16 images at max
             max_images_logs = 16
             if len(targets) < max_images_logs:
@@ -193,7 +200,7 @@ class BaseModule(LightningModule):
         pass
 
     def test_step(self, batch: _mapping_str_any, batch_idx: int):
-        step_out = self.step(batch, stage=RunningStage.TESTING)
+        step_out = self.step(batch)
         loss, images, targets, preds, dice, iou = (
             step_out["loss"],
             step_out["images"],
@@ -239,7 +246,7 @@ class BaseModule(LightningModule):
         pass
 
     def predict_step(self, batch: _mapping_str_any, batch_idx: int) -> Any:
-        step_out = self.step(batch, stage=RunningStage.PREDICTING)
+        step_out = self.step(batch)
         pred_out = dict(
             preds=step_out["preds"],
             mask_names=step_out["mask_names"],
