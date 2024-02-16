@@ -12,10 +12,10 @@ loss_fn:
 optimizer:
   _target_: torch.optim.AdamW
   _partial_: true
-  lr: 2.0e-4
+  lr: 2.0e-3
   weight_decay: 0.001
 scheduler:
-  _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+  _target_: torch.optim.lr_scheduler.CosineAnnealingLR
   _partial_: true
-  factor: 0.1
-  patience: 5
+  eta_min: 0.0001
+  T_max: 50

@@ -68,28 +68,10 @@ net:
   clip_resolution: 0.5
   sem_seg_postprocess_before_inference: true
 
-
 loss_fn: 
-  _target_: src.models.san.criterion.SetCriterion
-  num_classes: 1
-  matcher:
-    _target_: src.models.san.matcher.HungarianMatcher
-    cost_class: 2.0
-    cost_mask: 5.0
-    cost_dice: 5.0
-    num_points: 12544
-  weight_dict:
-    loss_ce: 2.0
-    loss_mask: 5.0
-    loss_dice: 5.0
-    loss_cef_0: 2.0
-    loss_maskf_0: 5.0
-    loss_dicef_0: 5.0
-  eos_coef: 1.0
-  losses: [labels, masks]
-  num_points: 12544
-  oversample_ratio: 3.0
-  importance_sample_ratio: 0.75
+  _target_: monai.losses.DiceCELoss
+  lambda_dice: 1.0
+  lambda_ce: 1.0
 optimizer:
   _target_: torch.optim.AdamW
   _partial_: true
@@ -99,4 +81,4 @@ scheduler:
   _target_: torch.optim.lr_scheduler.CosineAnnealingLR
   _partial_: true
   eta_min: 0.0001
-  T_max: 100
+  T_max: 50

@@ -28,6 +28,10 @@ class CLIPSeg(nn.Module):
     ):
 
         B, C, H, W = pixel_values.shape
-        outputs = self.clipseg(input_ids, pixel_values, attention_mask, **kwargs)
+        outputs = self.clipseg(
+            input_ids=input_ids,
+            pixel_values=pixel_values,
+            attention_mask=attention_mask
+        )
 
         return outputs.logits.view(B, 1, H, W)

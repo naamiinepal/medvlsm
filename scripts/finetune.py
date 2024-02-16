@@ -11,13 +11,13 @@ from default_configs import *
 
 # CUSTOM CONFIGS BLOCK -- start:
 models_configs = {
-    # "clipseg": {"batch_size": 32, "lr": 0.001},
-    # "clipseg_shallow_adapter_v": {"batch_size": 32, "lr": 0.001},
-    # "clipseg_shallow_adapter_vl": {"batch_size": 32, "lr": 0.001},
-    # "clipseg_shallow_adapter_vlc": {"batch_size": 32, "lr": 0.001},
-    # "clipseg_dense_adapter_v": {"batch_size": 32, "lr": 0.001},
-    # "clipseg_dense_adapter_vl": {"batch_size": 32, "lr": 0.001},
-    # "clipseg_dense_adapter_vlc": {"batch_size": 32, "lr": 0.001},
+    "clipseg": {"batch_size": 32, "lr": 0.001},
+    "clipseg_shallow_adapter_v": {"batch_size": 32, "lr": 0.001},
+    "clipseg_shallow_adapter_vl": {"batch_size": 32, "lr": 0.001},
+    "clipseg_shallow_adapter_vlc": {"batch_size": 32, "lr": 0.001},
+    "clipseg_dense_adapter_v": {"batch_size": 32, "lr": 0.001},
+    "clipseg_dense_adapter_vl": {"batch_size": 32, "lr": 0.001},
+    "clipseg_dense_adapter_vlc": {"batch_size": 32, "lr": 0.001},
     "san": {"batch_size": 8, "lr": 0.001}
 }
 
@@ -35,8 +35,8 @@ dataset_prompts = {
 }
 
 models = [
-    "san"
-    # "clipseg",
+    # "san"
+    "clipseg",
     # "clipseg_shallow_adapter_v",
     # "clipseg_shallow_adapter_vl",
     # "clipseg_shallow_adapter_vlc",

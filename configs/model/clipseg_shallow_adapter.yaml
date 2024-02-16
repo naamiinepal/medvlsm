@@ -11,7 +11,7 @@ net:
 loss_fn: 
   _target_: monai.losses.DiceCELoss
   lambda_dice: 1.0
-  lambda_ce: 0.2
+  lambda_ce: 1.0
 optimizer:
   _target_: torch.optim.AdamW
   _partial_: true
@@ -21,4 +21,4 @@ scheduler:
   _target_: torch.optim.lr_scheduler.CosineAnnealingLR
   _partial_: true
   eta_min: 0.0001
-  T_max: 100
+  T_max: 50

@@ -76,7 +76,20 @@ class SAN(nn.Module):
             for mask_emb in mask_embs
         ]
 
-        return torch.einsum("iqt,iqhw->thw", mask_logits[-1], mask_preds[-1])[:,None]
+        mask_logits = mask_logits[-1]
+        mask_preds = mask_preds[-1]
+        
+        mask_preds = F.interpolate(
+            mask_preds,
+            size=(pixel_values.shape[-2], pixel_values.shape[-1]),
+            mode="bilinear",
+            align_corners=False,
+        )
+        
+        print("mask_cls.shape", mask_logits.shape, "mask_pred.shape", mask_preds.shape)
+        pred_masks = torch.einsum("iqt,iqhw->thw", mask_logits, mask_preds)[:,None]
+        print(pred_masks.requires_grad)
+        return pred_masks
         # if stage == RunningStage.TRAINING:
         #     return {
         #         "pred_logits": mask_logits[-1],
@@ -87,12 +100,6 @@ class SAN(nn.Module):
         #     mask_logits = mask_logits[-1]
         #     # torch.cuda.empty_cache()
         #     # Inference
-        #     mask_preds = F.interpolate(
-        #         mask_preds,
-        #         size=(pixel_values.shape[-2], pixel_values.shape[-1]),
-        #         mode="bilinear",
-        #         align_corners=False,
-        #     )
 
         #     self.semantic_inference(mask_logits, mask_preds)
 

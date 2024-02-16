@@ -351,7 +351,7 @@ class CLIPSegDenseAdapter(nn.Module):
             vision_hidden_states[i + 1] for i in self.clipseg_config.extract_layers
         ]
 
-        conditional_embeddings = self.text_forward(input_ids, attention_mask)
+        conditional_embeddings = self.text_forward(input_ids=input_ids, attention_mask=attention_mask)
 
         if self.adapter_in_cond:
             conditional_embeddings = self.cond_adapter(conditional_embeddings)

@@ -88,15 +88,11 @@ class BaseModule(LightningModule):
 
         # The loss function should accept sigmoid predictions and gt mask of same shape
         loss = self.loss_fn(net_outputs, masks)
-
+        
         # Convert prediction sigmoids to binary masks
         pred_masks = pred_masks > self.hparams.threshold
 
-        # Convert masks to one-hot encoding if multi-class
-        if self.hparams.multi_class:
-            one_hot_masks = one_hot(masks, num_classes=pred_masks.shape[1])
-        else:
-            one_hot_masks = masks
+        one_hot_masks = masks
 
         # Compute metrics
         dice = compute_dice(
