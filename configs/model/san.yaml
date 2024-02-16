@@ -1,0 +1,102 @@
+_target_: src.models.BaseModule
+net:
+  _target_: src.models.SAN
+  clip_visual_extractor_cfg:
+    last_layer_idx: 9
+    frozen_exclude: ["positional_embedding"]
+  clip_rec_head_cfg: 
+    first_layer_idx: 9
+    frozen_exclude: []
+    sos_token_format: cls_token
+    sos_token_num: 100
+    cross_attn: false
+    downsample_method: max
+  side_adapter_network:
+    _target_: src.models.san.side_adapter.RegionwiseSideAdapterNetwork
+    num_queries: 100
+    vit_model: 
+      _target_: timm.create_model
+      model_name: vit_w240n6d8_patch16
+      pretrained: false
+      img_size: 640
+      drop_path_rate: 0.0
+      fc_norm: false
+      num_classes: 0
+      embed_layer: 
+        _target_: src.models.san.side_adapter.timm_wrapper.PatchEmbed
+        _partial_: true
+    fusion_layers:
+      _target_: torch.nn.ModuleDict
+      modules:
+        layer_0: 
+          _target_: src.models.san.layers.build_fusion_layer
+          fusion_type: add
+          in_channels: 768
+          out_channels: 240
+        layer_3: 
+          _target_: src.models.san.layers.build_fusion_layer
+          fusion_type: add
+          in_channels: 768
+          out_channels: 240
+        layer_6: 
+          _target_: src.models.san.layers.build_fusion_layer
+          fusion_type: add
+          in_channels: 768
+          out_channels: 240
+        layer_9: 
+          _target_: src.models.san.layers.build_fusion_layer
+          fusion_type: add
+          in_channels: 768
+          out_channels: 240
+    mask_decoder:
+      _target_: src.models.san.side_adapter.MLPMaskDecoder
+      in_channels: 240
+      total_heads: 12
+      total_layers: 1
+      embed_channels: 256
+      mlp_channels: 256
+      mlp_num_layers: 3
+      rescale_attn_bias: true
+    fusion_map:
+      0: 0
+      3: 1
+      6: 2
+      9: 3
+    deep_supervision_idxs: [7,8]
+  size_divisibility: 32
+  asymetric_input: true
+  clip_resolution: 0.5
+  sem_seg_postprocess_before_inference: true
+
+
+loss_fn: 
+  _target_: src.models.san.criterion.SetCriterion
+  num_classes: 1
+  matcher:
+    _target_: src.models.san.matcher.HungarianMatcher
+    cost_class: 2.0
+    cost_mask: 5.0
+    cost_dice: 5.0
+    num_points: 12544
+  weight_dict:
+    loss_ce: 2.0
+    loss_mask: 5.0
+    loss_dice: 5.0
+    loss_cef_0: 2.0
+    loss_maskf_0: 5.0
+    loss_dicef_0: 5.0
+  eos_coef: 1.0
+  losses: [labels, masks]
+  num_points: 12544
+  oversample_ratio: 3.0
+  importance_sample_ratio: 0.75
+optimizer:
+  _target_: torch.optim.AdamW
+  _partial_: true
+  lr: 2.0e-3
+  weight_decay: 0.001
+scheduler:
+  _target_: torch.optim.lr_scheduler.CosineAnnealingLR
+  _partial_: true
+  eta_min: 0.0001
+  T_max: 100
