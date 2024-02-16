@@ -18,7 +18,7 @@ models_configs = {
     "clipseg_dense_adapter_v": {"batch_size": 32, "lr": 0.001},
     "clipseg_dense_adapter_vl": {"batch_size": 32, "lr": 0.001},
     "clipseg_dense_adapter_vlc": {"batch_size": 32, "lr": 0.001},
-    "san": {"batch_size": 8, "lr": 0.0005}
+    "san": {"batch_size": 16, "lr": 0.0005}
 }
 
 

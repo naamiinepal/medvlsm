@@ -17,6 +17,7 @@ from .side_adapter import RegionwiseSideAdapterNetwork
 class SAN(nn.Module):
     def __init__(
         self,
+        open_clip_cfg: Dict[str, str],
         clip_visual_extractor_cfg: Dict[str, Any],
         clip_rec_head_cfg: Dict[str, Any],
         side_adapter_network: RegionwiseSideAdapterNetwork,
@@ -28,11 +29,9 @@ class SAN(nn.Module):
         super().__init__()
         self.asymetric_input = asymetric_input
         self.clip_resolution = clip_resolution
-        
-        self.clip_model, _ = open_clip.create_model_from_pretrained(
-            model_name="ViT-B/16", pretrained="openai"
-        )
-        
+
+        self.clip_model, _ = open_clip.create_model_from_pretrained(**open_clip_cfg)
+
         self.sem_seg_postprocess_before_inference = sem_seg_postprocess_before_inference
         self.size_divisibility = size_divisibility
 
@@ -44,12 +43,7 @@ class SAN(nn.Module):
             visual_encoder=self.clip_model.visual, **clip_rec_head_cfg
         )
 
-    def forward(
-        self,
-        pixel_values: torch.Tensor,
-        input_ids: torch.Tensor,
-        **kwargs
-    ):
+    def forward(self, pixel_values: torch.Tensor, input_ids: torch.Tensor, **kwargs):
         if self.asymetric_input:
             clip_input = F.interpolate(
                 pixel_values, scale_factor=self.clip_resolution, mode="bilinear"
@@ -57,7 +51,7 @@ class SAN(nn.Module):
 
         with torch.no_grad():
             clip_image_features = self.clip_visual_extractor(clip_input)
-        
+
         mask_preds, attn_biases = self.side_adapter_network(
             pixel_values, clip_image_features
         )
@@ -83,29 +77,9 @@ class SAN(nn.Module):
             mode="bilinear",
             align_corners=False,
         )
-        
+
         mask_logits = mask_logits.mean(dim=-1)
 
-        pred_masks = torch.einsum("bq,bqhw->bhw", mask_logits, mask_preds)[:,None]
-        
+        pred_masks = torch.einsum("bq,bqhw->bhw", mask_logits, mask_preds)[:, None]
+
         return pred_masks
-        # if stage == RunningStage.TRAINING:
-        #     return {
-        #         "pred_logits": mask_logits[-1],
-        #         "pred_masks": mask_preds[-1],
-        #     }
-        # else:
-        #     mask_preds = mask_preds[-1]
-        #     mask_logits = mask_logits[-1]
-        #     # torch.cuda.empty_cache()
-        #     # Inference
-
-        #     self.semantic_inference(mask_logits, mask_preds)
-
-    # def semantic_inference(self, mask_cls: torch.Tensor, mask_pred: torch.Tensor):
-    #     print("mask_cls.shape", mask_cls.shape, "mask_pred.shape", mask_pred.shape)
-    #     mask_cls = mask_cls.sigmoid()
-    #     mask_pred = mask_pred.sigmoid()
-    #     print("mask_cls.shape", mask_cls.shape, "mask_pred.shape", mask_pred.shape)
-    #     semseg = torch.einsum("qc,qhw->chw", mask_cls, mask_pred)
-    #     return semseg

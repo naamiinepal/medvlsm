@@ -1,6 +1,9 @@
 _target_: src.models.BaseModule
 net:
   _target_: src.models.SAN
+  open_clip_cfg:
+    model_name: ViT-B/16
+    pretrained: openai
   clip_visual_extractor_cfg:
     last_layer_idx: 9
     frozen_exclude: ["positional_embedding"]
