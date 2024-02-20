@@ -11,7 +11,7 @@ model_checkpoint:
   filename: "best"
   monitor: "val/dice_epoch"
   mode: "max"
-  save_last: true
+  save_last: false
   auto_insert_metric_name: false
   save_top_k: 1
   

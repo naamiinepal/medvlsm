@@ -36,7 +36,7 @@ trainer:
 
 logger:
   wandb:
-    project: medvlsm_v2
+    project: vlsm_adapter
     tags: ${tags}
     name: ${experiment_name}
 
@@ -49,7 +49,7 @@ logger:
 img_size: [352, 352] # 352 for clipseg or 224 for biomedclipseg, or 416 for cris
 tokenizer_type: clipseg # clipseg or biomedclip
 context_length: 77 # 77 for clip_based, 256 for biomedclip
-tags: [ CLIPSegAdapter ]
+tags: [ CLIPSegShallowAdapter, VLC]
 seed: 42
 
 img_mean: [0.485, 0.456, 0.406]

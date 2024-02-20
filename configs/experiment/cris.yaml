@@ -30,7 +30,7 @@ trainer:
 
 logger:
   wandb:
-    project: adapter_in_vlsm
+    project: vlsm_adapter
     name: ${experiment_name}
     tags: ${tags}
 

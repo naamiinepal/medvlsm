@@ -31,7 +31,7 @@ trainer:
 
 logger:
   wandb:
-    project: medvlsm_v2
+    project: vlsm_adapter
     tags: ${tags}
     name: ${experiment_name}
 
