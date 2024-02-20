@@ -18,7 +18,8 @@ models_configs = {
     "clipseg_dense_adapter_v": {"batch_size": 32, "lr": 0.001},
     "clipseg_dense_adapter_vl": {"batch_size": 32, "lr": 0.001},
     "clipseg_dense_adapter_vlc": {"batch_size": 32, "lr": 0.001},
-    "san": {"batch_size": 16, "lr": 0.0005}
+    "san": {"batch_size": 32, "lr": 0.0003},
+    "cris": {"batch_size": 32, "lr": 0.001},
 }
 
 
@@ -35,14 +36,15 @@ dataset_prompts = {
 }
 
 models = [
-    "san"
-    # "clipseg",
-    # "clipseg_shallow_adapter_v",
-    # "clipseg_shallow_adapter_vl",
-    # "clipseg_shallow_adapter_vlc",
-    # "clipseg_dense_adapter_v",
-    # "clipseg_dense_adapter_vl",
-    # "clipseg_dense_adapter_vlc",
+    "clipseg_shallow_adapter_v",
+    "clipseg_shallow_adapter_vl",
+    "clipseg_shallow_adapter_vlc",
+    "clipseg_dense_adapter_v",
+    "clipseg_dense_adapter_vl",
+    "clipseg_dense_adapter_vlc",
+    "san",
+    "clipseg",
+    "cris"
 ]
 
 precision="16-mixed"
@@ -60,6 +62,7 @@ for model in models:
 
     for dataset, prompts in dataset_prompts.items():
         for p in prompts:
+            # Define bash command here
             command = f"python src/train.py \
                 experiment={model}.yaml \
                 experiment_name={model}_{dataset}_{p} \
@@ -82,5 +85,6 @@ for model in models:
 
             # Run the command
             if os.system(command=command) != 0:
+                # Block to run after encountering error
                 print(f"!!! ERROR - COMMAND FAILED!!! \n{command}")
                 exit()
