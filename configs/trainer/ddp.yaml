@@ -10,4 +10,4 @@ strategy: ddp_spawn
 accelerator: gpu
 devices: 4
 num_nodes: 1
-sync_batchnorm: True
+sync_batchnorm: true

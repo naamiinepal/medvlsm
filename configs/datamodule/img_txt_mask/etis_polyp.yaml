@@ -49,4 +49,4 @@ test_dataset:
 
 batch_size: 16
 num_workers: 4
-pin_memory: True
+pin_memory: true

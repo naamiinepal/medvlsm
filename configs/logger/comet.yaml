@@ -8,5 +8,5 @@ comet:
   rest_api_key: null
   # experiment_name: ""
   experiment_key: null # set to resume experiment
-  offline: False
+  offline: false
   prefix: ""

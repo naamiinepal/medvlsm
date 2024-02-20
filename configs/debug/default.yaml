@@ -11,8 +11,8 @@ callbacks: null
 logger: null
 
 extras:
-  ignore_warnings: False
-  enforce_tags: False
+  ignore_warnings: false
+  enforce_tags: false
 
 # sets level of all command line loggers to 'DEBUG'
 # https://hydra.cc/docs/tutorials/basic/running_your_app/logging/
@@ -22,7 +22,7 @@ hydra:
       level: DEBUG
 
   # use this to also set hydra loggers to 'DEBUG'
-  # verbose: True
+  # verbose: true
 
 trainer:
   max_epochs: 1
@@ -32,4 +32,4 @@ trainer:
 
 datamodule:
   num_workers: 0 # debuggers don't like multiprocessing
-  pin_memory: False # disable gpu memory pin
+  pin_memory: false # disable gpu memory pin

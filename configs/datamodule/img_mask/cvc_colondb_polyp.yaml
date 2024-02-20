@@ -37,4 +37,4 @@ test_dataset:
 batch_size: 16
 train_val_split: [0.8, 0.2]
 num_workers: 4
-pin_memory: True
+pin_memory: true

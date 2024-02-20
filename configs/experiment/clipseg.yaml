@@ -20,14 +20,9 @@ defaults:
 
 experiment_name: ??? # experiment name for logging and checkpointing
 
-model:
-  net:
-    freeze_encoder: false
-    freeze_decoder: false
-
 trainer:
   min_epochs: 10
-  max_epochs: 1000
+  max_epochs: 200
   gradient_clip_val: 0.5
   accelerator: gpu
   devices: [0]
