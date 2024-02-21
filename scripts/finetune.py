@@ -19,11 +19,9 @@ models_configs = {
     "clipseg_dense_adapter_vl": {"batch_size": 32, "lr": 0.001},
     "clipseg_dense_adapter_vlc": {"batch_size": 32, "lr": 0.001},
     "san": {"batch_size": 32, "lr": 0.0003},
-    "cris": {"batch_size": 32, "lr": 0.001},
+    "cris": {"batch_size": 32, "lr": 0.0001},
 }
 
-
-prompts = ["random"]
 datasets = [
     "kvasir_polyp",
     "bkai_polyp", 
@@ -36,20 +34,20 @@ datasets = [
 ]
 
 models = [
-    "cris",
-    "clipseg_dense_adapter_v",
-    "clipseg_dense_adapter_vl",
+    # "cris",
     "clipseg_dense_adapter_vlc",
-    "clipseg_shallow_adapter_v",
-    "clipseg_shallow_adapter_vl",
+    "clipseg_dense_adapter_vl",
+    "clipseg_dense_adapter_v",
     "clipseg_shallow_adapter_vlc",
+    "clipseg_shallow_adapter_vl",
+    "clipseg_shallow_adapter_v",
     "san",
     "clipseg",
 ]
 
 # prompt_type = "random"
-# precision="16-mixed"
-# devices=[0]
+# precision="32"
+# devices=[1]
 
 # CUSTOM CONFIGS BLOCK -- end:
 
@@ -83,8 +81,8 @@ for model in models:
             # Log command in terminal
             print(f"RUNNING COMMAND \n{command}")
 
-            # Run the defined command
+            # Run the command
             if os.system(command=command) != 0:
-                # Block to run after encountering error
+                # Break the experimentation loop if error is detected
                 print(f"!!! ERROR - COMMAND FAILED!!! \n{command}")
                 exit()

@@ -12,7 +12,7 @@ net:
   dim_ffn: 2048
   dropout: 0.2
   intermediate: false
-  freeze_encoder: true
+  freeze_encoder: false
   cris_pretrain: pretrained/cris_best_single.pth
 
 loss_fn: 
