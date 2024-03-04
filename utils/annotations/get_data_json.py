@@ -54,7 +54,7 @@ def get_json_data(
 
     # for dataset in ['Kvaisir-SEG', 'clinicdb-polyp', 'bkai-polyp', 'cvc-300-polyp', 'cvc-colondb-polyp', 'etis-polyp']:
     with open(
-        f"/mnt/Enterprise2/kanchan/medvlsm/active_learning/prompts/{dataset}.csv"
+        f"/prompts/{dataset}.csv"
     ) as prompt_csv:
 
         prompt_df = pd.read_csv(prompt_csv)
