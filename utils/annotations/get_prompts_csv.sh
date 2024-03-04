@@ -1,0 +1,2 @@
+#!/bin/bash
+python3 utils/get_prompts_csv.py --dataset_root /mnt/Enterprise2/kanchan/medvlsm/datasets/clinicdb_polyp --csv_out_dir /mnt/Enterprise2/kanchan/medvlsm/active_learning/prompts --img_dir images --msk_dir masks --class_name polyp --dataset_name clinicdb_polyp --descriptions_json_file /mnt/Enterprise2/kanchan/medvlsm/active_learning/prompts/endoscopy.json
