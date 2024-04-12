@@ -60,7 +60,7 @@ hydra-colorlog==1.2.0
 hydra-core==1.2.0
 hydra-optuna-sweeper==1.2.0
 identify==2.5.22
-idna==3.4
+idna==3.7
 imageio==2.27.0
 importlib-metadata==6.5.0
 importlib-resources==6.1.1
