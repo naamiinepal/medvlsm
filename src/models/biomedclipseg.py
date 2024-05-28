@@ -1,3 +1,5 @@
+# Adapted from: https://github.com/huggingface/transformers
+
 from typing import Optional
 
 import open_clip
@@ -8,17 +10,25 @@ from transformers import CLIPSegConfig, CLIPSegForImageSegmentation
 
 
 class BiomedCLIPSeg(nn.Module):
-    """
-    BiomedCLIP Encoder + CLIPSeg Decoder
+    r"""BiomedCLIP Encoder + CLIPSeg Decoder
+
+    Args:
+        biomedclip_hf_api (str): HuggingFace api to import the BiomedCLIP implementation; 
+            Eg:'hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224'
+        clipseg_hf_api (str): HuggingFace api to import the CLIPSeg implementation; 
+            Eg:'CIDAS/clipseg-rd64-refined'
+        freeze_encoder (bool): Whether or not to freeze the encoders of pretrained CLIPSeg; Default is False.
+        freeze_decoder (bool): Whether or not to freeze the decoder of pretrained CLIPSeg; Default is False.
+        rand_init_decoder (bool): Whether or not to randomly initialize the decoder of pretrained CLIPSeg; Default is True.
     """
 
     def __init__(
         self,
         biomedclip_hf_api: str,
         clipseg_hf_api: str,
-        freeze_encoder=True,
-        freeze_decoder=False,
-        rand_init_decoder=True,
+        freeze_encoder: bool = True,
+        freeze_decoder: bool = False,
+        rand_init_decoder: bool = True,
     ):
         super().__init__()
         # Encoder from BiomedCLIP

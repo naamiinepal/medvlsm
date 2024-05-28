@@ -171,10 +171,7 @@ class BaseModule(LightningModule):
             max_images_logs = 16
             if len(targets) < max_images_logs:
                 max_images_logs = len(targets)
-
-            self.logger.log_image(
-                key="val/image", images=list(images.float())[:max_images_logs]
-            )
+                
             self.logger.log_image(
                 key="val/target_mask", images=list(targets.float())[:max_images_logs]
             )
@@ -220,10 +217,6 @@ class BaseModule(LightningModule):
             max_images_logs = 16
             if len(targets) < max_images_logs:
                 max_images_logs = len(targets)
-
-            self.logger.log_image(
-                key="test/image", images=list(images.float())[:max_images_logs]
-            )
 
             self.logger.log_image(
                 key="test/target_mask", images=list(targets.float())[:max_images_logs]

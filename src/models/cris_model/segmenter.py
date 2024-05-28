@@ -9,6 +9,26 @@ from .layers import FPN, Projector, TransformerDecoder, _int_3_tup
 
 
 class CRIS(nn.Module):
+    r""" CRIS implementation:
+        https://arxiv.org/abs/2111.15174
+        
+    Args:
+        clip_pretrain (str): Path to pretrained CLIP model
+        word_len (int): Length of words in the vocabulary
+        fpn_in (Tuple[int, int, int]): Number of input channels for FPN
+        fpn_out (Tuple[int, int, int]): Number of output channels for FPN
+        vis_dim (int): Dimension of the visual features
+        word_dim (int): Dimension of the text features
+        num_layers (int): Number of transformer layers
+        num_head (int): Number of attention heads
+        dim_ffn (int): Dimension of the feedforward network
+        dropout (float): Dropout rate
+        intermediate (bool): Whether to use intermediate layers
+        img_size (int): Size of the input image
+        freeze_encoder (bool): Whether to freeze the encoder
+        cris_pretrain (Optional[str]): Path to pretrained CRIS model
+    """
+
     def __init__(
         self,
         clip_pretrain: str,
