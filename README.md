@@ -79,6 +79,5 @@ python scripts/finetune.py
 This script will start the fine-tuning process, which is essential for customizing the model for specific tasks. For running inference, please update the defaults configs (such as `ckpt_path`, `models`, etc.) in `scripts/inference.py` to get the evulation metric or generate the output masks (in the original resolution).
 
 
-
 ### Acknowledgement
 We would like to thank [Lightning-Hydra-Template](https://github.com/ashleve/lightning-hydra-template) for providing a modifiable framework for running multiple experiments while tracking the hyperparameters.
