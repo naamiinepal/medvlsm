@@ -1,13 +1,28 @@
 # Exploring Transfer Learning in Medical Image Segmentation using Vision-Language Models
 
+*Accpeted at MIDL 2024*
+
+ArXiv Link: [arxiv.org/abs/2308.07706](https://arxiv.org/abs/2308.07706)
+
+## Abstract
+
+Medical image segmentation allows quantifying target structure size and shape, aiding in disease diagnosis, prognosis, surgery planning, and comprehension. Building upon recent advancements in foundation Vision-Language Models (VLMs) from natural image-text pairs, several studies have proposed adapting them to Vision-Language Segmentation Models (VLSMs) that allow using language text as an additional input to segmentation models. Introducing auxiliary information via text with human-in-the-loop prompting during inference opens up unique opportunities, such as open vocabulary segmentation and potentially more robust segmentation models against out-of-distribution data. Although transfer learning from natural to medical images has been explored for image-only segmentation models, the joint representation of vision-language in segmentation problems remains underexplored. This study introduces the first systematic study on transferring VLSMs to 2D medical images, using carefully curated datasets encompassing diverse modalities and insightful language prompts and experiments. Our findings demonstrate that although VLSMs show competitive performance compared to image-only models for segmentation after finetuning in limited medical image datasets, not all VLSMs utilize the additional information from language prompts, with image features playing a dominant role. While VLSMs exhibit enhanced performance in handling pooled datasets with diverse modalities and show potential robustness to domain shifts compared to conventional segmentation models, our results suggest that novel approaches are required to enable VLSMs to leverage the various auxiliary information available through language prompts.
 
 ## Table of Contents
+- [Methodology](#methodology)
 - [Installation](#installation)
 - [Usage](#usage)
   - [Pretrained Model Preparation](#pretrained-model-preparation) 
   - [Dataset Preparation](#dataset-preparation)
   - [Zero-Shot Segmentation](#zero-shot-segmentation)
   - [Finetuning](#finetuning)
+- [Results](#results)
+
+## Methodology
+
+<div style="text-align: center;">
+  <img src="res/method.png" alt="CLIPSeg-TFA" style="width: 80%;"/>
+</div>
 
 ## Installation
 
@@ -84,6 +99,11 @@ This script will start the fine-tuning process, which is essential for customizi
 In the file, all of the methods have been defined as bash scripts.
 For running inference, please update the defaults configs (such as `ckpt_path`, `models`, etc.) in `scripts/inference.py` to get the evulation metric or generate the output masks (in the original resolution).
 
+## Results
+
+<div style="text-align: center;">
+  <img src="res/results.png" alt="Results" style="width: 80%;"/>
+</div>
 
 ### Acknowledgement
 We would like to thank [Lightning-Hydra-Template](https://github.com/ashleve/lightning-hydra-template) for providing a modifiable framework for running multiple experiments while tracking the hyperparameters.
