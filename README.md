@@ -21,7 +21,7 @@ Medical image segmentation allows quantifying target structure size and shape, a
 ## Methodology
 
 <div style="text-align: center;">
-  <img src="res/method.png" alt="CLIPSeg-TFA" style="width: 80%;"/>
+  <img src="media/method.png" alt="CLIPSeg-TFA" style="width: 80%;"/>
 </div>
 
 ## Installation
@@ -102,7 +102,7 @@ For running inference, please update the defaults configs (such as `ckpt_path`, 
 ## Results
 
 <div style="text-align: center;">
-  <img src="res/results.png" alt="Results" style="width: 80%;"/>
+  <img src="media/results.png" alt="Results" style="width: 80%;"/>
 </div>
 
 ### Acknowledgement
