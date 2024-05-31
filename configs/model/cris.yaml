@@ -12,7 +12,7 @@ net:
   dim_ffn: 2048
   dropout: 0.2
   intermediate: false
-  cris_pretrain: pretrained/cris_best_single.pth
+  cris_pretrain: pretrained/cris.pt
 threshold: 0.35
 
 loss_fn: 

@@ -29,70 +29,67 @@ Medical image segmentation allows quantifying target structure size and shape, a
 To get started, it's recommended to create a Python (preferably `v3.10.12`) environment using either Conda or venv. This helps to manage dependencies and ensure a consistent runtime environment.
 
 1. **Conda:**
-  ```bash
-    conda create --name your_env_name python=3.10
-    conda activate your_env_name
-  ```
+```sh
+  conda create --name your_env_name python=3.10
+  conda activate your_env_name
+```
 **OR**
 
 2. **venv:**
-  ```bash
-    python -m venv your_env_name
-    source your_env_name/bin/activate
-  ```
+```sh
+  python -m venv your_env_name
+  source your_env_name/bin/activate
+```
 
 Once your environment is active, install the required packages from `requirements.txt` using pip:
-```bash
-pip install -r requirements.txt
+```sh
+  pip install -r requirements.txt
 ```
 
 ## Usage
 
 ### Pretrained Model Preparation
-Because the pretrained weights of *BiomedCLIP* and *CLIPSeg* are readily available in the *Hugging Face Model Hub*, you do not need to save the weights manually. However, the [pretrained weights](https://github.com/DerrickWang005/CRIS.pytorch/issues/3) of *CRIS* were retrieved from a GitHub issue.
-First, preprocess the weights by removing the `model.` prefix from each of the parameter keys, then save the weights in the folder `pretrained/`.
-Also download the CLIP's [RN50.pt](https://openaipublic.azureedge.net/clip/models/afeb0e10f9e5a86da6080e35cf09123aca3b358a0c3e3b6c78a7b63bc04b6762/RN50.pt) and save it in the folder `pretrained/`.
-Please refer to the config file [cris.yaml](configs/model/cris.yaml) for more information.
+#### BiomedCLIP and CLIPSeg
+Note: *You can skip the text below, it is for informative purpose only.*
+
+Because the pretrained weights of [BiomedCLIP](https://huggingface.co/microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224) and [CLIPSeg](https://huggingface.co/CIDAS/clipseg-rd64-refined) are readily available in the *Hugging Face Model Hub*, they are automatically downloaded by the python scripts during training or inference.
+
+#### CRIS
+
+The Resnet50 vision-encoder of CLIP is needed for CRIS can be downloaded from [here](https://openaipublic.azureedge.net/clip/models/afeb0e10f9e5a86da6080e35cf09123aca3b358a0c3e3b6c78a7b63bc04b6762/RN50.pt) using the following command.
+
+```sh
+  wget https://openaipublic.azureedge.net/clip/models/afeb0e10f9e5a86da6080e35cf09123aca3b358a0c3e3b6c78a7b63bc04b6762/RN50.pt -O pretrain/RN50.pt
+```
+
+
+We have not yet found the official link to download the CRIS model.
+We have used the model from [CRIS's repo's issue](https://github.com/DerrickWang005/CRIS.pytorch/issues/3) using [this OneDrive link](https://polimi365-my.sharepoint.com/:f:/g/personal/10524166_polimi_it/Ej-lkQiFHU1ArDG68PP-u3kBJL_UBvvn1scRU7Ps5fiIOw?e=KzFowg).
+
+
+The downloaded CRIS model needs to be loaded in `DataParallel` mode.
+To convert the model, run the following command after saving the downloaded model to `pretrained/cris.pt`:
+
+```sh
+  python scripts/convert_cris_model.py
+```
 
 ### Dataset Preparation
-Before running any experiments, you need to ensure that the provided dataset is correctly placed within the `data/` folder at the root of the project. 
-The directory structure of the `data/` folder should look like this:
-```
-data/
-│
-├── bkai_polyp/
-│   ├── anns/
-│   │   ├── test.json
-│   │   ├── train.json
-│   │   └── val.json
-│   ├── images/
-│   └── masks/
-│
-├── [other dataset folders...]
-│
-└── kvasir_polyp/
-    ├── anns/
-    │   ├── test.json
-    │   ├── train.json
-    │   └── val.json
-    ├── images/
-    └── masks/
-```
-Each dataset folder (`bkai_polyp`, `busi`, `camus`, etc.) contains three sub-directories: `anns/`, `images/`, and `masks/`. The anns directory contains prompt files (`test.json`, `train.json`, `val.json`), while `images/` and `masks/` hold input images and target masks respectively.
+Please refer to [DATASETS.MD](DATASETS.MD) for more details.
 
 ### Zero-Shot Segmentation
 
 To perform zero-shot segmentation, you can use the provided script. Open a terminal and navigate to the project directory, then execute the following command:
-```bash
-python scripts/zss.py
+```sh
+  python scripts/zss.py
 ```
 This script will initiate the zero-shot segmentation process and produce the desired results.
 
 ### Finetuning
 
 If you need to run our fine-tuning models, you can use the provided script:
-```bash
-python scripts/finetune.py
+```sh
+  python scripts/finetune.py
 ```
 
 This script will start the fine-tuning process, which is essential for customizing the model for specific tasks. 
