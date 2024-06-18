@@ -175,7 +175,7 @@ rich==13.3.4
 rsa==4.9
 safetensors==0.3.2
 scikit-image==0.20.0
-scikit-learn==1.2.2
+scikit-learn==1.5.0
 scipy==1.9.1
 segmentation-models-pytorch==0.3.3
 sentencepiece==0.1.97
