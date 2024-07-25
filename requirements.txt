@@ -201,7 +201,7 @@ timm==0.9.2
 tokenizers==0.15.0
 toml==0.10.2
 tomli==2.0.1
-torch==2.1.1
+torch==2.2.0
 torchaudio==2.1.1
 torchmetrics==0.10.0
 torchvision==0.16.1
