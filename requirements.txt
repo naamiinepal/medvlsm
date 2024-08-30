@@ -124,7 +124,7 @@ oauthlib==3.2.2
 omegaconf==2.3.0
 open-clip-torch @ git+https://github.com/mlfoundations/open_clip.git@695c72d1ef1c3044404bb5579ea25e2051658c2d
 opencv-python==4.8.1.78
-opencv-python-headless==4.7.0.72
+opencv-python-headless==4.8.1.78
 optuna==2.10.1
 packaging==23.0
 pandas==2.0.0
