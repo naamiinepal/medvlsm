@@ -2,6 +2,8 @@
 
 [*Accpeted at MIDL 2024*](https://openreview.net/forum?id=sN3sDKkGeN)
 
+Presentation Link: [youtube](https://youtu.be/-mV53dZZs9o?t=21733)
+
 Paper Link: [arXiv](https://arxiv.org/abs/2308.07706)
 
 ## Abstract
