@@ -1,6 +1,6 @@
 # Exploring Transfer Learning in Medical Image Segmentation using Vision-Language Models
 
-[*Accpeted at MIDL 2024*](https://openreview.net/forum?id=sN3sDKkGeN)
+[*Accepted at MIDL 2024*](https://openreview.net/forum?id=sN3sDKkGeN)
 
 Presentation Link: [youtube](https://youtu.be/-mV53dZZs9o?t=21733)
 
